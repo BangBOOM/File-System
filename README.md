@@ -20,3 +20,21 @@ delete: 删除xxx内容
 reset: 放弃修改返回
 ```
 
+## 文件目录
+
+```txt
+File System/
+|-- FileManageSystem/ #源码
+|   |-- tests/        #测试文件，目前没有
+|   |   |-- __init__.py
+|   |-- __init__.py
+|   |-- main.py
+|
+|-- docs/             #项目文档，目前没有
+|   |-- conf.py
+|   |-- abc.rst
+|
+|-- setup.py          #安装、部署、打包的脚本
+|-- requirements.txt  #环境依赖
+|-- README
+```
