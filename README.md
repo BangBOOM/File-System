@@ -12,6 +12,7 @@
 
 ```
 init: 初始化项目
+try: 尝试完成xxx功能 
 add: 添加用xxx功能
 update: 完善xx功能
 done: 完成xx功能
