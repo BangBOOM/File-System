@@ -18,3 +18,13 @@ def serializer(text: str) -> list:
     b_text = pickle.dumps(text)
     block_num = int(ceil(len(b_text) / BLOCK_SIZE))  # 计算块数向上取整
     yield from [b_text[BLOCK_SIZE * i:BLOCK_SIZE * (i + 1)] for i in range(block_num)]
+
+
+def split_serializer(b_obj: bytes) -> list:
+    """
+    输入字节流按照block大小切分
+    :param b_text:
+    :return:
+    """
+    block_num = int(ceil(len(b_obj) / BLOCK_SIZE))  # 计算块数向上取整
+    yield from [b_obj[BLOCK_SIZE * i:BLOCK_SIZE * (i + 1)] for i in range(block_num)]

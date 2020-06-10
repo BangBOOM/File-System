@@ -4,7 +4,6 @@ time:2020/6/9 1:35
 content:数据结构定义
 """
 
-import array
 import pickle
 import time
 from config import *
@@ -44,16 +43,27 @@ class SuperBlock(Block):
     超级块
     """
 
-    def __init__(self, block_group_link):
-        self.inode_cnt = INODE_NUM  # inode 总数量
+    def __init__(self):
+        self.inode_cnt = INODE_BLOCK_NUM  # inode 总数量
         self.inode_unused_cnt = 0  # inode 空闲数量
-        self.block_cnt = BLOCK_NUM  # 数据块总数量
+        self.block_cnt = DATA_BLOCK_NUM  # 数据块总数量
         self.block_unused_cnt = 0  # 数据块空闲数量
         self.valid_bit = False  # True被挂载，False未被挂载
         self.block_size = BLOCK_SIZE
         self.inode_size = INODE_SIZE
+        self.block_group_link = BlockGroupLink(0, 0)
+        self.node_group_link = INodeGroupLink(0, 0)
+
+    def load(self, block_group_link, node_group_link):
+        self.init_block_group_link(block_group_link)
+        self.init_node_group_link(node_group_link)
+        self.valid_bit = True
+
+    def init_block_group_link(self, block_group_link):
         self.block_group_link = block_group_link
-        self.free_inode_stack = array.array('l', [-1] * FREE_NODE_CNT)
+
+    def init_node_group_link(self, node_group_link):
+        self.node_group_link = node_group_link
 
     def get_data_block_id(self, fp):
         """
@@ -94,7 +104,7 @@ class SuperBlock(Block):
 
         next_id = self.block_group_link.get_next_stack()
 
-        #写回
+        # 写回
         write_back(self.block_group_link, fp)
         del self.block_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
 
@@ -105,12 +115,48 @@ class SuperBlock(Block):
 
         self.free_up_data_block(fp, block_id)
 
-    def get_free_inode_id(self):
+    def get_free_inode_id(self, fp):
         """
         获得空闲的inode
         :return: 索引id
         """
-        pass
+        if self.inode_unused_cnt == 0:
+            raise Exception("没有空闲inode")
+        flag, tmp_id = self.node_group_link.get_free_block()
+
+        if flag:  # 有空闲空间
+            self.inode_unused_cnt -= 1
+            return tmp_id
+
+        # 切换空闲栈
+        # 写回
+        write_back(self.node_group_link, fp)
+        del self.node_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
+
+        # 读取
+        db_id = INODE_BLOCK_START_ID + tmp_id
+        fp.seek(db_id * 512)
+        self.node_group_link = Block.form_bytes(fp.read())  # 根据block_id从磁盘读取写回
+
+        return self.get_free_inode_id(fp)
+
+    def free_up_inode_block(self, fp, block_id):
+        if self.node_group_link.has_free_space():
+            self.node_group_link.add_to_stack(block_id)
+            return
+
+        next_id = self.node_group_link.get_next_stack()
+
+        # 写回
+        write_back(self.node_group_link, fp)
+        del self.node_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
+
+        # 读取
+        db_id = INODE_BLOCK_START_ID + next_id
+        fp.seek(db_id * 512)
+        self.node_group_link = Block.form_bytes(fp.read())  # 根据block_id从磁盘读取写回
+
+        self.free_up_data_block(fp, block_id)
 
 
 class INode(Block):
@@ -131,7 +177,7 @@ class INode(Block):
         self._ctime = time.time()  # inode上一次变动时间，创建时间
         self._mtime = time.time()  # 文件内容上一次变动的时间
         self._atime = time.time()  # 文件上一次打开的时间
-        self._i_sectors = array.array('l', [-1] * 13)  # 指向的文件/目录所在的数据块
+        self._i_sectors = [-1] * 13  # 指向的文件/目录所在的数据块
 
     @property
     def i_no(self):
@@ -194,18 +240,10 @@ class CatalogBlock(Block):
 
 
 class GroupLink(Block):
-    pass
-
-
-class BlockGroupLink(GroupLink):
-    """
-    成组分配中的基本块管理一组空闲块
-    """
-
-    def __init__(self, start_block_id, cnt=FREE_BLOCK_CNT):
+    def __init__(self, start_block_id, cnt):
         self.block_id = start_block_id
         self._count = cnt
-        self.stack = array.array('l', [i for i in range(start_block_id + self.count, start_block_id, -1)])
+        self.stack = [i for i in range(start_block_id + self.count, start_block_id, -1)]
         if self.count < FREE_BLOCK_CNT:  # 不足成组数目则是最后一组,在栈顶放入0
             self.stack.insert(0, 0)
 
@@ -239,8 +277,19 @@ class BlockGroupLink(GroupLink):
         return self.stack[0]
 
 
+class BlockGroupLink(GroupLink):
+    """
+    成组分配中的基本块管理一组空闲块
+    """
+
+    def __init__(self, start_block_id, cnt=FREE_BLOCK_CNT):
+        super().__init__(start_block_id, cnt)
+
+
 class INodeGroupLink(GroupLink):
-    pass
+
+    def __init__(self, start_block_id, cnt=FREE_NODE_CNT):
+        super().__init__(start_block_id, cnt)
 
 
 if __name__ == '__main__':
