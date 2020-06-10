@@ -17,13 +17,4 @@
 2020/6/10
 
 添加了添加了文本切分序列化，具体的就是当一个文件大于一个基本块容量时可以将文本切分成n份，简单实现了INode节点。
-
-基本理清楚了一些结构，学习的文章如下。
-
-学习内容链接：
-
-+ [十六. 文件系统二(创建文件系统)](https://zhuanlan.zhihu.com/p/36754495)
-+ [Linux文件系统详解](https://juejin.im/post/5b8ba9e26fb9a019c372e100#heading-13)
-+ [Linux文件系统详解](https://www.cnblogs.com/bellkosmos/p/detail_of_linux_file_system.html)
-+ [鸟叔linux私房菜中文件系统部分](http://cn.linux.vbird.org/linux_basic/linux_basic.php)
-
+基本理清楚了一些结构
