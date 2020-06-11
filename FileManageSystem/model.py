@@ -24,7 +24,7 @@ class INode:
     存放文件说明信息和相应标识符的BFD
     """
 
-    def __init__(self, i_no: int, name: str):
+    def __init__(self, i_no: int, name: str,block: dict):
         '''
 
         :param i_no:    节点块号
@@ -32,6 +32,7 @@ class INode:
         '''
         self.i_no = i_no  # inode编号
         self.name = name
+        self.block = block  #用字典表示inode编号和文件名的对应
         self._write_deny = False  # 写文件，防止多个进程同时对一个文件写
         self._i_sectors = array.array('l', [-1] * 13)
 
@@ -84,6 +85,8 @@ class INode:
         except:
             raise ValueError("iNode对象 反序列化失败")
         return obj
+
+
 
 class CatalogBlock(Block):
     """

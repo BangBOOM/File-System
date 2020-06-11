@@ -7,6 +7,7 @@ time:2020/6/10 2:35
 """
 from config import BLOCK_SIZE
 from math import ceil
+from model import INode
 
 
 def serializer(text: str, encoding='utf-8')->list:
@@ -20,3 +21,12 @@ def serializer(text: str, encoding='utf-8')->list:
     block_num = int(ceil(len(b_text) / BLOCK_SIZE)) # 计算块数向上取整
     yield from [b_text[BLOCK_SIZE * i:BLOCK_SIZE * (i + 1)] for i in range(block_num)]
 
+def createfile(filename: str,inode: INode):
+    i_num = 6   #分配一个inode
+    inode.block[i_num] = filename  #文件名和分配的inode对应
+    return [i_num,filename]
+
+def serchfile(filename: str,inode: INode):
+    for i_num in inode.block.keys():
+        if inode.block[i_num] == filename:
+            return i_num
