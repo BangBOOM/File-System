@@ -25,13 +25,6 @@ def file(func):
 def initialization(fp):
     # 超级块写入
     sp = SuperBlock()
-    start = 0
-    for item in split_serializer(bytes(sp)):
-        if start == SUPER_BLOCK_NUM:
-            raise ValueError("超级块大小超出限制")
-        fp.seek(start * BLOCK_SIZE)
-        fp.write(item)
-        start += 1
 
     # 索引链接写入
     tmp = INODE_BLOCK_NUM
@@ -59,6 +52,24 @@ def initialization(fp):
         fp.write(bytes(block_group_link))
         start += FREE_BLOCK_CNT
         tmp -= FREE_BLOCK_CNT
+
+    inode_id = sp.get_free_inode_id(fp)
+    inode = INode(inode_id, 0)
+    dir = CatalogBlock(BASE_NAME)
+    for block in split_serializer(bytes(dir)):
+        block_id = sp.get_data_block_id(fp)
+        inode.add_block_id(block_id)
+        fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
+        fp.write(block)
+    inode.write_back(fp)
+
+    start = 0
+    for item in split_serializer(bytes(sp)):
+        if start == SUPER_BLOCK_NUM:
+            raise ValueError("超级块大小超出限制")
+        fp.seek(start * BLOCK_SIZE)
+        fp.write(item)
+        start += 1
 
 
 if __name__ == '__main__':

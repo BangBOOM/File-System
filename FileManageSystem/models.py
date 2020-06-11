@@ -31,11 +31,8 @@ class Block:
             raise ValueError("iNode对象 反序列化失败")
         return obj
 
-
-def write_back(obj, fp):
-    db_id = DATA_BLOCK_START_ID + obj.block_id
-    fp.seek(db_id * 512)
-    fp.write(bytes(obj))  # 写回当前块
+    def write_back(self, fp):
+        pass
 
 
 class SuperBlock(Block):
@@ -45,25 +42,25 @@ class SuperBlock(Block):
 
     def __init__(self):
         self.inode_cnt = INODE_BLOCK_NUM  # inode 总数量
-        self.inode_unused_cnt = 0  # inode 空闲数量
+        self.inode_unused_cnt = INODE_BLOCK_NUM  # inode 空闲数量
         self.block_cnt = DATA_BLOCK_NUM  # 数据块总数量
-        self.block_unused_cnt = 0  # 数据块空闲数量
+        self.block_unused_cnt = DATA_BLOCK_NUM  # 数据块空闲数量
         self.valid_bit = False  # True被挂载，False未被挂载
         self.block_size = BLOCK_SIZE
         self.inode_size = INODE_SIZE
-        self.block_group_link = BlockGroupLink(0, 0)
-        self.node_group_link = INodeGroupLink(0, 0)
+        self.block_group_link = BlockGroupLink(0)
+        self.node_group_link = INodeGroupLink(0)
 
-    def load(self, block_group_link, node_group_link):
-        self.init_block_group_link(block_group_link)
-        self.init_node_group_link(node_group_link)
-        self.valid_bit = True
-
-    def init_block_group_link(self, block_group_link):
-        self.block_group_link = block_group_link
-
-    def init_node_group_link(self, node_group_link):
-        self.node_group_link = node_group_link
+    # def load(self, block_group_link, node_group_link):
+    #     self.init_block_group_link(block_group_link)
+    #     self.init_node_group_link(node_group_link)
+    #     self.valid_bit = True
+    #
+    # def init_block_group_link(self, block_group_link):
+    #     self.block_group_link = block_group_link
+    #
+    # def init_node_group_link(self, node_group_link):
+    #     self.node_group_link = node_group_link
 
     def get_data_block_id(self, fp):
         """
@@ -80,12 +77,12 @@ class SuperBlock(Block):
 
         # 切换空闲栈
         # 写回
-        write_back(self.block_group_link, fp)
+        self.block_group_link.write_back(fp)
         del self.block_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
 
         # 读取
         db_id = DATA_BLOCK_START_ID + tmp_id
-        fp.seek(db_id * 512)
+        fp.seek(db_id * BLOCK_SIZE)
         self.block_group_link = BlockGroupLink.form_bytes(fp.read())  # 根据block_id从磁盘读取写回
 
         return self.get_data_block_id(fp)
@@ -105,12 +102,12 @@ class SuperBlock(Block):
         next_id = self.block_group_link.get_next_stack()
 
         # 写回
-        write_back(self.block_group_link, fp)
+        self.block_group_link.write_back(fp)
         del self.block_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
 
         # 读取
         db_id = DATA_BLOCK_START_ID + next_id
-        fp.seek(db_id * 512)
+        fp.seek(db_id * BLOCK_SIZE)
         self.block_group_link = BlockGroupLink.form_bytes(fp.read())  # 根据block_id从磁盘读取写回
 
         self.free_up_data_block(fp, block_id)
@@ -130,12 +127,12 @@ class SuperBlock(Block):
 
         # 切换空闲栈
         # 写回
-        write_back(self.node_group_link, fp)
+        self.node_group_link.write_back(fp)
         del self.node_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
 
         # 读取
         db_id = INODE_BLOCK_START_ID + tmp_id
-        fp.seek(db_id * 512)
+        fp.seek(db_id * BLOCK_SIZE)
         self.node_group_link = Block.form_bytes(fp.read())  # 根据block_id从磁盘读取写回
 
         return self.get_free_inode_id(fp)
@@ -148,12 +145,12 @@ class SuperBlock(Block):
         next_id = self.node_group_link.get_next_stack()
 
         # 写回
-        write_back(self.node_group_link, fp)
+        self.node_group_link.write_back(fp)
         del self.node_group_link  # 在内存中删除当前块，这个不必须，gc会自动收了
 
         # 读取
         db_id = INODE_BLOCK_START_ID + next_id
-        fp.seek(db_id * 512)
+        fp.seek(db_id * BLOCK_SIZE)
         self.node_group_link = Block.form_bytes(fp.read())  # 根据block_id从磁盘读取写回
 
         self.free_up_data_block(fp, block_id)
@@ -178,6 +175,13 @@ class INode(Block):
         self._mtime = time.time()  # 文件内容上一次变动的时间
         self._atime = time.time()  # 文件上一次打开的时间
         self._i_sectors = [-1] * 13  # 指向的文件/目录所在的数据块
+        self._i_sectors_state = 0  # 13块存放数据的栈用了几块
+
+    def add_block_id(self, block_id):
+        if self._i_sectors_state == 12:
+            raise Exception("文件超出大小INode无法存放")
+        self._i_sectors[self._i_sectors_state] = block_id
+        self._i_sectors_state += 1
 
     @property
     def i_no(self):
@@ -236,7 +240,15 @@ class CatalogBlock(Block):
     """
     目录块
     """
-    pass
+
+    def __init__(self, name):
+        """
+        初始化目录块
+        :param name: 目录名
+        """
+        self.name = name
+        self.son_files = dict()  # key:filename,value:inode_id
+        self.son_dirs = dict()
 
 
 class GroupLink(Block):
@@ -285,11 +297,21 @@ class BlockGroupLink(GroupLink):
     def __init__(self, start_block_id, cnt=FREE_BLOCK_CNT):
         super().__init__(start_block_id, cnt)
 
+    def write_back(self, fp):
+        db_id = DATA_BLOCK_START_ID + self.block_id
+        fp.seek(db_id * BLOCK_SIZE)
+        fp.write(bytes(self))
+
 
 class INodeGroupLink(GroupLink):
 
     def __init__(self, start_block_id, cnt=FREE_NODE_CNT):
         super().__init__(start_block_id, cnt)
+
+    def write_back(self, fp):
+        db_id = INODE_BLOCK_START_ID + self.block_id
+        fp.seek(db_id * BLOCK_SIZE)
+        fp.write(bytes(self))
 
 
 if __name__ == '__main__':
