@@ -92,7 +92,8 @@ class CatalogBlock(Block):
     """
     目录块
     """
-    pass
+    def __init__(self):
+        self.block = {}
 
 
 class fileBlock(Block):
