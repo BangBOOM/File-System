@@ -3,25 +3,11 @@ author:Wenquan Yang
 time:2020/6/11 1:24
 """
 from models import *
-from file_pointer import FilePointer
+from file_pointer import file_func
 from utils import *
 
 
-def file(func):
-    """
-    装饰器，负责自动关闭文件
-    :param func: 函数
-    :return:
-    """
-
-    def func_x():
-        with FilePointer() as fp:
-            func(fp)
-
-    return func_x
-
-
-@file
+@file_func('wb')
 def initialization(fp):
     # 超级块写入
     sp = SuperBlock()
@@ -30,6 +16,7 @@ def initialization(fp):
     tmp = INODE_BLOCK_NUM
     start = 0
     while tmp > 0:
+        sp.inode_unused_cnt -= 1
         if tmp < FREE_NODE_CNT:
             inode_group_link = INodeGroupLink(start, tmp)
         else:
@@ -43,6 +30,7 @@ def initialization(fp):
     tmp = DATA_BLOCK_NUM
     start = 0
     while tmp > 0:
+        sp.block_unused_cnt -= 1
         if tmp < FREE_BLOCK_CNT:
             block_group_link = BlockGroupLink(start, tmp)
         else:
@@ -53,6 +41,7 @@ def initialization(fp):
         start += FREE_BLOCK_CNT
         tmp -= FREE_BLOCK_CNT
 
+    # 初始化一个根目录
     inode_id = sp.get_free_inode_id(fp)
     inode = INode(inode_id, 0)
     dir = CatalogBlock(BASE_NAME)
@@ -63,6 +52,8 @@ def initialization(fp):
         fp.write(block)
     inode.write_back(fp)
 
+    # 写入超级块
+    sp.base_dir_inode_id = inode_id
     start = 0
     for item in split_serializer(bytes(sp)):
         if start == SUPER_BLOCK_NUM:

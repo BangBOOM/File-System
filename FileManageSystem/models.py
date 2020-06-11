@@ -28,7 +28,7 @@ class Block:
         try:
             obj = pickle.loads(s)
         except BaseException:
-            raise ValueError("iNode对象 反序列化失败")
+            raise ValueError("Block对象 反序列化失败")
         return obj
 
     def write_back(self, fp):
@@ -50,17 +50,7 @@ class SuperBlock(Block):
         self.inode_size = INODE_SIZE
         self.block_group_link = BlockGroupLink(0)
         self.node_group_link = INodeGroupLink(0)
-
-    # def load(self, block_group_link, node_group_link):
-    #     self.init_block_group_link(block_group_link)
-    #     self.init_node_group_link(node_group_link)
-    #     self.valid_bit = True
-    #
-    # def init_block_group_link(self, block_group_link):
-    #     self.block_group_link = block_group_link
-    #
-    # def init_node_group_link(self, node_group_link):
-    #     self.node_group_link = node_group_link
+        self.base_dir_inode_id = -1  # 根目录的inode_id
 
     def get_data_block_id(self, fp):
         """
@@ -176,12 +166,33 @@ class INode(Block):
         self._atime = time.time()  # 文件上一次打开的时间
         self._i_sectors = [-1] * 13  # 指向的文件/目录所在的数据块
         self._i_sectors_state = 0  # 13块存放数据的栈用了几块
+        self._target_type = 1  # 0指代文件，1指代目录
 
     def add_block_id(self, block_id):
         if self._i_sectors_state == 12:
             raise Exception("文件超出大小INode无法存放")
         self._i_sectors[self._i_sectors_state] = block_id
         self._i_sectors_state += 1
+
+    def get_target_obj(self, fp):
+        s = b''
+        for block_id in self._i_sectors[:self._i_sectors_state]:
+            fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
+            s += fp.read()
+        if self.target_type == 1:
+            return CatalogBlock.form_bytes(s)
+        else:
+            return pickle.loads(s)
+
+    @property
+    def target_type(self):
+        return self._target_type
+
+    @target_type.setter
+    def target_type(self, value):
+        if value not in (0, 1):
+            raise ValueError("输入的文件类型错误")
+        self._target_type = value
 
     @property
     def i_no(self):
@@ -234,6 +245,11 @@ class INode(Block):
         :return:
         """
         self._write_deny = False
+
+    def write_back(self, fp):
+        db_id = INODE_BLOCK_START_ID + self.i_no
+        fp.seek(db_id * BLOCK_SIZE)
+        fp.write(bytes(self))
 
 
 class CatalogBlock(Block):
