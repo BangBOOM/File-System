@@ -6,6 +6,12 @@ from config import *
 
 
 class FilePointer:
+    """
+    对基本的文件模块做一个扩充，
+    将一些基本的配置放出初始化部分使其更加适应我们自定义的文件系统
+    目前这这部分是直接硬封装没加扩展，后续看情况加（咕咕
+    """
+
     def __init__(self, mode):
         self._fp = open(DISK_NAME, mode)
         self._fp.seek(DISK_SIZE + 1, 0)
@@ -34,7 +40,7 @@ class FilePointer:
 
 def file_func(mode):
     """
-    文件装饰器
+    文件装饰器，添加此装饰器就不需要关注文件的打开关闭
     :param mode: 读写方式，主要针对初始化磁盘'wb+'和加载磁盘'ab+'
     :return:
     """
@@ -42,7 +48,7 @@ def file_func(mode):
     def func_wrapper(func):
         def return_wrapper():
             with FilePointer(mode) as fp:
-                res=func(fp)
+                res = func(fp)
             return res
 
         return return_wrapper

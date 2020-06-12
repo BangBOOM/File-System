@@ -2,10 +2,11 @@
 author:Wenquan Yang
 time:2020/6/12 3:04
 """
-from models import *
+from config import *
+from models import SuperBlock
+from models import INode
 from file_pointer import file_func
-from utils import *
-
+from utils import form_serializer
 
 @file_func('ab+')
 def load_disk(fp):
@@ -21,8 +22,8 @@ def load_disk(fp):
     base_inode_id = sp.base_dir_inode_id  # 读取超级块中保存的base节点的块号
     fp.seek((INODE_BLOCK_START_ID + base_inode_id) * BLOCK_SIZE)
     base_inode = INode.form_bytes(fp.read())  # 根据块号加载根目录的inode
-    base_dir = base_inode.get_target_obj(fp)  # 根据inode加载目录所在的数据块初始化目录对象
-    return base_dir.name
+    # base_dir = base_inode.get_target_obj(fp)  # 根据inode加载目录所在的数据块初始化目录对象
+    return sp,base_inode
 
 
 if __name__ == '__main__':

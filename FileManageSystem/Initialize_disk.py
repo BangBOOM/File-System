@@ -1,6 +1,7 @@
 """
 author:Wenquan Yang
 time:2020/6/11 1:24
+intro: 磁盘格式化部分
 """
 from models import *
 from file_pointer import file_func
@@ -21,8 +22,7 @@ def initialization(fp):
             inode_group_link = INodeGroupLink(start, tmp)
         else:
             inode_group_link = INodeGroupLink(start)
-        fp.seek((start + INODE_BLOCK_START_ID) * BLOCK_SIZE)
-        fp.write(bytes(inode_group_link))
+        inode_group_link.write_back(fp)
         start += FREE_NODE_CNT
         tmp -= FREE_NODE_CNT
 
@@ -35,9 +35,7 @@ def initialization(fp):
             block_group_link = BlockGroupLink(start, tmp)
         else:
             block_group_link = BlockGroupLink(start)
-        # print((start + DATA_BLOCK_START_ID) * BLOCK_SIZE)
-        fp.seek((start + DATA_BLOCK_START_ID) * BLOCK_SIZE)
-        fp.write(bytes(block_group_link))
+        block_group_link.write_back(fp)
         start += FREE_BLOCK_CNT
         tmp -= FREE_BLOCK_CNT
 
@@ -54,13 +52,7 @@ def initialization(fp):
 
     # 写入超级块
     sp.base_dir_inode_id = inode_id
-    start = 0
-    for item in split_serializer(bytes(sp)):
-        if start == SUPER_BLOCK_NUM:
-            raise ValueError("超级块大小超出限制")
-        fp.seek(start * BLOCK_SIZE)
-        fp.write(item)
-        start += 1
+    sp.write_back(fp)
 
 
 if __name__ == '__main__':

@@ -1,12 +1,13 @@
 """
 author:Wenquan Yang
 time:2020/6/9 1:35
-content:数据结构定义
+intro:数据结构定义
 """
 
 import pickle
 import time
 from config import *
+from utils import split_serializer
 
 
 class Block:
@@ -28,11 +29,17 @@ class Block:
         try:
             obj = pickle.loads(s)
         except BaseException:
-            raise ValueError("Block对象 反序列化失败")
+            raise TypeError("字节序列反序列化成Block对象失败")
         return obj
 
     def write_back(self, fp):
-        pass
+        """
+        模块写回
+        要求第一步先定位当前块所在的位置使用fp.seek(xxx)
+        :param fp:
+        :return:
+        """
+        raise NotImplemented("当前对象未实现write_back方法")
 
 
 class SuperBlock(Block):
@@ -51,6 +58,16 @@ class SuperBlock(Block):
         self.block_group_link = BlockGroupLink(0)
         self.node_group_link = INodeGroupLink(0)
         self.base_dir_inode_id = -1  # 根目录的inode_id
+
+    def write_back(self, fp):
+        fp.seek(0)
+        start = 0
+        for item in split_serializer(bytes(self)):
+            if start == SUPER_BLOCK_NUM:
+                raise ValueError("超级块大小超出限制")
+            fp.seek(start * BLOCK_SIZE)
+            fp.write(item)
+            start += 1
 
     def get_data_block_id(self, fp):
         """
@@ -257,12 +274,13 @@ class CatalogBlock(Block):
     目录块
     """
 
-    def __init__(self, name):
+    def __init__(self, name, parent_inode_id=-1):
         """
         初始化目录块
         :param name: 目录名
         """
         self.name = name
+        self.parent_inode_id = parent_inode_id  # 上级目录的inode索引的id
         self.son_files = dict()  # key:filename,value:inode_id
         self.son_dirs = dict()
 
