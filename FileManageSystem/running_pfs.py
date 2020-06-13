@@ -21,6 +21,12 @@ def running_pfs(fs:FileSystem):
         cmd=input("> ")
         if cmd == "pwd":
             print(fs.pwd())
+        elif cmd == 'mkdir':
+            '''等待实现'''
+            pass
+        elif cmd == 'll':
+            '''等待实现'''
+            pass
         elif cmd == "exit":
             break
 
