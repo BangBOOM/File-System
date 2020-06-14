@@ -56,12 +56,35 @@ def cd(fs: FileSystem, name: str, user_id=10):
 
 
 def touch(fs: FileSystem, name: str, user_id=10):
+    """
+    新建文件
+    :param fs:
+    :param name:
+    :param user_id:
+    :return:
+    """
     pass
 
 
 def vim(fs: FileSystem, name: str, user_id=10):
+    """
+    向文件中输入内容，或者是修改文件
+    :param fs:
+    :param name:
+    :param user_id:
+    :return:
+    """
     pass
 
+def more(fs:FileSystem,name:str,user_i=10):
+    """
+    展示文件内容
+    :param fs:
+    :param name:
+    :param user_i:
+    :return:
+    """
+    pass
 
 def ls(fs: FileSystem):
     """
