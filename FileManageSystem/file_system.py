@@ -99,9 +99,6 @@ class FileSystem:
     def get_new_cat(self, name, parent_inode_id):
         return CatalogBlock(name, parent_inode_id)
 
-    def write_pwd_inode(self):
-        self.pwd_inode.write_back(self.fp)
-
     def write_back(self, inode: INode, serializer: bytes):
         """
         申请空闲的数据块并将id添加到inode的栈中
@@ -128,6 +125,13 @@ class FileSystem:
             if block_id == -1:
                 break
             self.sp.free_up_data_block(self.fp, block_id)
+
+    def write_back_pwd_inode(self):
+        """
+        写回当前的pwd_inode
+        :return:
+        """
+        self.pwd_inode.write_back(self.fp)
 
 
 def file_system_func(func):

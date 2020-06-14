@@ -46,13 +46,12 @@ def cd(fs: FileSystem, name: str, user_id=10):
 
     if target_id:
         inode = fs.get_inode(target_id)
-        fs.write_pwd_inode()
+        fs.write_back_pwd_inode()
         fs.pwd_inode = inode
         if name == "..":
             fs.path.pop(-1)
         else:
             fs.path.append(fs.get_pwd_cat_name())
-
 
 
 def touch(fs: FileSystem, name: str, user_id=10):
@@ -76,7 +75,8 @@ def vim(fs: FileSystem, name: str, user_id=10):
     """
     pass
 
-def more(fs:FileSystem,name:str,user_i=10):
+
+def more(fs: FileSystem, name: str, user_i=10):
     """
     展示文件内容
     :param fs:
@@ -85,6 +85,7 @@ def more(fs:FileSystem,name:str,user_i=10):
     :return:
     """
     pass
+
 
 def ls(fs: FileSystem):
     """
