@@ -25,6 +25,21 @@ class FileSystem:
         self.pwd_inode = self.base_inode
         self.path = ['/']  # 用于存储当前路径，每个文件名是一个item
 
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """
+        上下文管理，退出的时候写回超级块，根节点inode，当前节点inode
+        :param exc_type:
+        :param exc_val:
+        :param exc_tb:
+        :return:
+        """
+        self.sp.write_back(self.fp)
+        self.base_inode.write_back(self.fp)
+        self.pwd_inode.write_back(self.fp)
+
     def get_current_path_name(self):
         return self.path[-1]
 
@@ -55,6 +70,13 @@ class FileSystem:
         """
         return self.pwd_inode.get_target_obj(self.fp)
 
+    def get_pwd_cat_name(self):
+        """
+        获取当前inode对应的目录的名称
+        :return:
+        """
+        return self.load_pwd_obj().name
+
     def get_new_inode(self, user_id=10):
         """
         获取新的inode
@@ -63,8 +85,22 @@ class FileSystem:
         inode_id = self.sp.get_free_inode_id(self.fp)
         return INode(i_no=inode_id, user_id=user_id)
 
+    def get_inode(self, inode_id, user_id=10):
+        """
+        获取inode对象
+        :param inode_id:
+        :param user_id:
+        :return:
+        """
+        self.fp.seek((INODE_BLOCK_START_ID + inode_id) * BLOCK_SIZE)
+        inode = INode.form_bytes(self.fp.read())
+        return inode
+
     def get_new_cat(self, name, parent_inode_id):
         return CatalogBlock(name, parent_inode_id)
+
+    def write_pwd_inode(self):
+        self.pwd_inode.write_back(self.fp)
 
     def write_back(self, inode: INode, serializer: bytes):
         """
@@ -73,27 +109,25 @@ class FileSystem:
         :param serializer:
         :return:
         """
-        inode.clear()  # 写入需要重新清空inode中的指向栈
+        i_sectors = inode.i_sectors
+        k = 0
+        inode.clear()
         for item in split_serializer(serializer):
-            data_block_id = self.sp.get_data_block_id(self.fp)
-            self.fp.seek((data_block_id + DATA_BLOCK_START_ID) * 512)
-            self.fp.write(item)
+            if i_sectors[k] != -1:
+                data_block_id = i_sectors[k]
+            else:
+                data_block_id = self.sp.get_data_block_id(self.fp)
             inode.add_block_id(data_block_id)
+            self.fp.seek((data_block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
+            self.fp.write(item)
+            self.fp.seek((data_block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
+            k += 1
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        """
-        上下文管理，推出的时候写回超级块，根节点inode，当前节点inode
-        :param exc_type:
-        :param exc_val:
-        :param exc_tb:
-        :return:
-        """
-        self.sp.write_back(self.fp)
-        self.base_inode.write_back(self.fp)
-        self.pwd_inode.write_back(self.fp)
+        # 如果有多余的则释放空间
+        for block_id in i_sectors[k:]:
+            if block_id == -1:
+                break
+            self.sp.free_up_data_block(self.fp, block_id)
 
 
 def file_system_func(func):
@@ -104,7 +138,7 @@ def file_system_func(func):
     """
 
     def func_wrapper():
-        with FilePointer('ab+') as fp:
+        with FilePointer('rb+') as fp:
             with FileSystem(fp) as fs:
                 res = func(fs)
         return res

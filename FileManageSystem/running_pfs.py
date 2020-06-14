@@ -5,13 +5,14 @@ intro:文件系统实际运行部分
 """
 from file_system import FileSystem
 from file_system import file_system_func
-from commands import mkdir, ls
+from commands import mkdir, ls, cd
 
 
 @file_system_func
 def running_pfs_for_test(fs):
-    pwd_obj = fs.load_pwd_obj()
-    return pwd_obj.name
+    for i in range(10):
+        mkdir(fs, "hello" + str(i))
+    ls(fs)
 
 
 @file_system_func
@@ -26,6 +27,8 @@ def running_pfs(fs: FileSystem):
             mkdir(fs, cmd[1])
         elif cmd[0] == 'ls':
             ls(fs)
+        elif cmd[0] == 'cd':
+            cd(fs, cmd[1])
         elif cmd[0] == "exit":
             break
 

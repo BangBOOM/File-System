@@ -187,18 +187,18 @@ class INode(Block):
         self._i_sectors_state = 0  # 13块存放数据的栈用了几块
         self._target_type = target_type  # 0指代文件，1指代目录
 
-    def clear(self):
-        """
-        清空_i_sectors
-        :return:
-        """
-        self._i_sectors_state = 0
+    def get_sector(self, idx):
+        return self._i_sectors[idx]
 
     def add_block_id(self, block_id):
         if self._i_sectors_state == 12:
             raise Exception("文件超出大小INode无法存放")
         self._i_sectors[self._i_sectors_state] = block_id
         self._i_sectors_state += 1
+
+    def clear(self):
+        self._i_sectors = [-1] * 13
+        self._i_sectors_state = 0
 
     def get_target_obj(self, fp):
         s = b''
@@ -209,6 +209,18 @@ class INode(Block):
             return CatalogBlock.form_bytes(s)
         else:
             return pickle.loads(s)
+
+    @property
+    def i_sectors(self):
+        return self._i_sectors
+
+    @property
+    def i_sectors_state(self):
+        return self._i_sectors_state
+
+    @i_sectors_state.setter
+    def i_sectors_state(self, val):
+        self._i_sectors_state = val
 
     @property
     def target_type(self):
@@ -294,9 +306,17 @@ class CatalogBlock(Block):
         self.son_dirs = dict()
 
     def add_new_cat(self, name, inode_id):
-        self.son_files[name] = inode_id
+        self.son_dirs[name] = inode_id
+
+    def get_dir(self, dir_name):
+        return self.son_dirs.get(dir_name)
 
     def check_name(self, name):
+        """
+
+        :param name:
+        :return: 是否存在，message
+        """
         if name in self.son_dirs or name in self.son_files:
             return False, f"新建的名字{name}已经存在"
         else:
@@ -367,50 +387,3 @@ class INodeGroupLink(GroupLink):
         db_id = INODE_BLOCK_START_ID + self.block_id
         fp.seek(db_id * BLOCK_SIZE)
         fp.write(bytes(self))
-
-
-if __name__ == '__main__':
-    ''' 使用seek移动文件指针，在指定位置即指定的块写入相应的数据
-    s="asdasdd"*(2**10)
-    block=0
-    with open("demo1.pfs", 'wb') as f:
-        s_b=bytes(s,encoding='utf-8')
-        start=0
-        while start*1024<len(s_b):
-            print(s_b[start*1024:(start+1)*1024])
-            f.seek(start*1024,0)
-            f.write(s_b[start*1024:(start+1)*1024])
-            block+=1
-            start+=1
-    print(block)
-    with open("demo1.pfs",'rb') as f:
-        l=b''
-        i=0
-        while i<block:
-            try:
-                tmp=f.read(1024)
-                print(tmp)
-                l+=tmp
-                i+=1
-                f.seek(1024 * i, 0)
-            except:
-                break
-    '''
-
-    '''  测试对inode节点对象的序列化并存入相应的块中
-    obj_list=[INode(10,"hello") for _ in range(10)]
-    with open("demo.pfs",'ab+') as f:
-        for i,obj in enumerate(obj_list):
-            f.seek(1024*i, 0)
-            s=f.read(1024)
-            print(type(INode.form_bytes(s)))
-            f.write(bytes(obj))
-        f.write(b'\x00')
-    print(l.decode(encoding='utf-8'))
-    inode=INode(10,"hello")
-    s=bytes(inode)
-    print(s)
-    print(s.__sizeof__())
-    new_s=INode.form_bytes(s)
-    print(type(new_s))
-    '''
