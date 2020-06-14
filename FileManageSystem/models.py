@@ -168,10 +168,12 @@ class INode(Block):
     存储文件的相关信息，用于定位到文件所在的数据块
     """
 
-    def __init__(self, i_no: int, user_id: int):
+    def __init__(self, i_no: int, user_id: int, target_type=1):
         """
 
         :param i_no:    节点块号
+        :param user_id: 用户号
+        :param target_type: 目标文件的类型
         """
         self._i_no = i_no  # inode编号
         self._write_deny = False  # 写文件，防止多个进程同时对一个文件写
@@ -183,7 +185,14 @@ class INode(Block):
         self._atime = time.time()  # 文件上一次打开的时间
         self._i_sectors = [-1] * 13  # 指向的文件/目录所在的数据块
         self._i_sectors_state = 0  # 13块存放数据的栈用了几块
-        self._target_type = 1  # 0指代文件，1指代目录
+        self._target_type = target_type  # 0指代文件，1指代目录
+
+    def clear(self):
+        """
+        清空_i_sectors
+        :return:
+        """
+        self._i_sectors_state = 0
 
     def add_block_id(self, block_id):
         if self._i_sectors_state == 12:
@@ -283,6 +292,18 @@ class CatalogBlock(Block):
         self.parent_inode_id = parent_inode_id  # 上级目录的inode索引的id
         self.son_files = dict()  # key:filename,value:inode_id
         self.son_dirs = dict()
+
+    def add_new_cat(self, name, inode_id):
+        self.son_files[name] = inode_id
+
+    def check_name(self, name):
+        if name in self.son_dirs or name in self.son_files:
+            return False, f"新建的名字{name}已经存在"
+        else:
+            return True, None
+
+    def file_name_and_types(self):
+        return [(key, 1) for key in self.son_dirs.keys()] + [(key, 0) for key in self.son_files.keys()]
 
 
 class GroupLink(Block):
