@@ -96,7 +96,7 @@ def more(fs: FileSystem, name: str, user_id=10):
     """
     pass
 
-def tree(fs:FileSystem,depth,user_id=10):
+def tree(fs: FileSystem, depth, user_id=10):
     """
     生成文件目录结构，具体样式百度
     .
@@ -125,4 +125,10 @@ def ls(fs: FileSystem):
 
 
 def rm(fs: FileSystem, name: str, user_id=10):
-    pass
+    """
+    删除文件
+    :param fs:
+    :param name:
+    :param user_id:
+    :return:
+    """
