@@ -168,7 +168,7 @@ class INode(Block):
     存储文件的相关信息，用于定位到文件所在的数据块
     """
 
-    def __init__(self, i_no: int, user_id: int, target_type=1):
+    def __init__(self, i_no: int, user_id: int, target_type=DIR_TYPE):
         """
 
         :param i_no:    节点块号
@@ -312,11 +312,24 @@ class CatalogBlock(Block):
         self.son_dirs[name] = inode_id
 
     def get_dir(self, dir_name):
+        """
+        获取对应目录的inode_id
+        :param dir_name:
+        :return:
+        """
         return self.son_dirs.get(dir_name)
+
+    def get_file(self, file_name):
+        """
+        获取对应文件的inode_id
+        :param file_name:
+        :return:
+        """
+        return self.son_files.get(file_name)
 
     def check_name(self, name):
         """
-
+        检查文件名称是否存在
         :param name:
         :return: 是否存在，message
         """
@@ -324,6 +337,19 @@ class CatalogBlock(Block):
             return False, f"新建的名字{name}已经存在"
         else:
             return True, None
+
+    def get_all_son_inode(self) -> list:
+        """
+        返回所有子目录文件的节点
+        :return: list
+        """
+        return [v for _, v in self.son_files.items()] + [v for _, v in self.son_dirs.items()]
+
+    def remove(self, name, flag):
+        if flag == FILE_TYPE:
+            self.son_files.pop(name)
+        elif flag == DIR_TYPE:
+            self.son_dirs.pop(name)
 
     def file_name_and_types(self):
         return [(key, 1) for key in self.son_dirs.keys()] + [(key, 0) for key in self.son_files.keys()]
@@ -335,9 +361,9 @@ class CatalogBlock(Block):
         :return:-1 不存在
         """
         if name in self.son_files:
-            return 1
+            return FILE_TYPE
         if name in self.son_dirs:
-            return 0
+            return DIR_TYPE
         if name not in self.son_dirs and name not in self.son_files:
             return -1
 

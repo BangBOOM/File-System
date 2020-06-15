@@ -105,7 +105,6 @@ class FileSystem:
         inode_id = self.sp.get_free_inode_id(self.fp)
         return INode(i_no=inode_id, user_id=user_id)
 
-
     def get_inode(self, inode_id, user_id=10):
         """
         获取inode对象
@@ -153,6 +152,20 @@ class FileSystem:
         :return:
         """
         self.pwd_inode.write_back(self.fp)
+
+    def free_up_inode(self, inode_id: int, user_id=10):
+        """
+        释放文件对应的inode，同时级联释放inode指向的空间
+        如果指向的是inode指向的是目录则递归删除
+        :return:
+        """
+        inode = self.get_inode(inode_id)
+        if inode.target_type == DIR_TYPE:
+            inode_target = inode.get_target_obj(self.fp)
+            for son_inode_id in inode_target.get_all_son_inode():
+                self.free_up_inode(son_inode_id)
+        for i in range(inode.i_sectors_state):
+            self.sp.free_up_inode_block(self.fp, inode.get_sector(i))
 
 
 def file_system_func(func):

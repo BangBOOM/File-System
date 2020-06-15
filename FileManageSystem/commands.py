@@ -4,6 +4,7 @@ time:2020/6/14 20:18
 """
 from file_system import FileSystem
 import pickle
+from config import *
 
 
 def mkdir(fs: FileSystem, name: str, user_id=10):
@@ -33,7 +34,7 @@ def cd(fs: FileSystem, args: str, user_id=10):
     """
     切换目录,可以多级目录切换
     :param fs:
-    :param name: 切换到的目录名
+    :param args: 切换到的目录名
     :param user_id: 用户id，用于权限
     :return:
     """
@@ -100,9 +101,9 @@ def vim(fs: FileSystem, name: str, user_id=10):
     flag = pwd_cat.is_exist_son_files(name)
     if flag == -1:
         print("{} 文件不存在".format(name))
-    if flag == 0:
+    if flag == DIR_TYPE:
         print("{} 是文件夹".format(name))
-    if flag == 1:
+    if flag == FILE_TYPE:
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
         s = "world" * (2 ** 8)
@@ -116,16 +117,16 @@ def more(fs: FileSystem, name: str, user_id=10):
     展示文件
     :param fs:
     :param name:
-    :param user_i:
+    :param user_id:
     :return:
     """
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag = pwd_cat.is_exist_son_files(name)
     if flag == -1:
         print("{} 文件不存在".format(name))
-    if flag == 0:
+    if flag == DIR_TYPE:
         print("{} 是文件夹".format(name))
-    if flag == 1:
+    if flag == FILE_TYPE:
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
         # print(inode._i_sectors_state)
@@ -161,11 +162,44 @@ def ls(fs: FileSystem):
     print(' '.join([item[0] for item in file_list]))
 
 
-def rm(fs: FileSystem, name: str, user_id=10):
+def rm(fs: FileSystem, args: list, user_id=10):
     """
     删除文件
     :param fs:
-    :param name:
+    :param args: 参数
     :param user_id:
     :return:
     """
+
+    pwd_cat = fs.load_pwd_obj()
+    power = False  # 删除力度
+    if args[0] == '-r':
+        power = True
+        name = args[1]
+    else:
+        name = args[0]
+
+    flag = pwd_cat.is_exist_son_files(name)
+    if flag == -1:
+        print("文件不存在")
+    else:
+        inode_id = -1
+        if flag == DIR_TYPE:
+            if not power:
+                print("无法直接删除目录请使用 rm -r dir_name")
+                return
+            inode_id = pwd_cat.get_dir(name)
+        elif flag == FILE_TYPE:
+
+            if not power:
+                dose = input(f"rm:是否删除一般文件“{name}”[Y/N]:")
+                if dose.lower() != 'y':
+                    return
+            inode_id = pwd_cat.get_file(name)
+
+        if inode_id != -1:
+            fs.free_up_inode(inode_id)
+
+            # 从当前目录中删除并讲当前目录写回
+            pwd_cat.remove(name, flag)
+            fs.write_back(fs.pwd_inode, bytes(pwd_cat))
