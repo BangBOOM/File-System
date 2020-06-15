@@ -3,7 +3,7 @@ author:Wenquan Yang
 time:2020/6/14 20:18
 """
 from file_system import FileSystem
-
+import pickle
 
 def mkdir(fs: FileSystem, name: str, user_id=10):
     """
@@ -72,7 +72,21 @@ def touch(fs: FileSystem, name: str, user_id=10):
     :param user_id:
     :return:
     """
-    pass
+    pwd_cat = fs.load_pwd_obj()  # 当前目录
+    flag, info = pwd_cat.check_name(name)
+    if not flag:
+        print(info)
+        return
+
+    new_inode = fs.get_new_inode(user_id=user_id)
+    new_inode.target_type = 0 #文件
+    pwd_cat.son_files[name] = new_inode.i_no  #加入文件字典
+    #new_cat = fs.get_new_cat(name=name, parent_inode_id=fs.pwd_inode.i_no)
+    #fs.write_back(new_inode, bytes(new_cat))
+    fs.write_back(fs.pwd_inode, bytes(pwd_cat))
+    new_inode.write_back(fs.fp)
+
+
 
 
 def vim(fs: FileSystem, name: str, user_id=10):
@@ -83,7 +97,20 @@ def vim(fs: FileSystem, name: str, user_id=10):
     :param user_id:
     :return:
     """
-    pass
+    pwd_cat = fs.load_pwd_obj() #当前目录
+    flag = pwd_cat.is_exist_son_files(name)
+    if flag == -1:
+        print("{} 文件不存在".format(name))
+    if flag == 0:
+        print("{} 是文件夹".format(name))
+    if flag == 1:
+        inode_io = pwd_cat.son_files[name]
+        inode = fs.get_inode(inode_id=inode_io)
+        s = "world" * (2 ** 8)
+        fs.write_back(inode, pickle.dumps(s))
+        #print(inode._i_sectors_state)
+        inode.write_back(fs.fp)
+
 
 
 def more(fs: FileSystem, name: str, user_id=10):
@@ -94,7 +121,18 @@ def more(fs: FileSystem, name: str, user_id=10):
     :param user_i:
     :return:
     """
-    pass
+    pwd_cat = fs.load_pwd_obj()  # 当前目录
+    flag = pwd_cat.is_exist_son_files(name)
+    if flag == -1:
+        print("{} 文件不存在".format(name))
+    if flag == 0:
+        print("{} 是文件夹".format(name))
+    if flag == 1:
+        inode_io = pwd_cat.son_files[name]
+        inode = fs.get_inode(inode_id=inode_io)
+        #print(inode._i_sectors_state)
+        text = fs.load_files_block(inode)
+        print(text)
 
 def tree(fs: FileSystem, depth, user_id=10):
     """

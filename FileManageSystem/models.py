@@ -201,6 +201,9 @@ class INode(Block):
         self._i_sectors_state = 0
 
     def get_target_obj(self, fp):
+        if self.target_type == 0 and self._i_sectors_state == 0:
+            error = "文件没有写入内容"
+            return error
         s = b''
         for block_id in self._i_sectors[:self._i_sectors_state]:
             fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
@@ -324,6 +327,19 @@ class CatalogBlock(Block):
 
     def file_name_and_types(self):
         return [(key, 1) for key in self.son_dirs.keys()] + [(key, 0) for key in self.son_files.keys()]
+
+    def is_exist_son_files(self, name):
+        """
+        :return:1 存在son_files
+        :return:0 存在son_dirs
+        :return:-1 不存在
+        """
+        if name in self.son_files:
+            return 1
+        if name in self.son_dirs:
+            return 0
+        if name not in self.son_dirs and name not in self.son_files:
+            return -1
 
 
 class GroupLink(Block):
