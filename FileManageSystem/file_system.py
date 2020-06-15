@@ -4,7 +4,7 @@ time:2020/6/12 22:30
 """
 from config import *
 from utils import form_serializer
-from utils import split_serializer
+from utils import split_serializer, input_text
 from models import SuperBlock
 from models import INode
 from models import CatalogBlock
@@ -76,6 +76,13 @@ class FileSystem:
         :return:反序列化的内容
         """
         return inode.get_target_obj(self.fp)
+
+    def input_files(self):
+        """
+        输入文件内容
+        :return:输入的内容
+        """
+        return input_text()
 
     def get_pwd_cat_name(self):
         """

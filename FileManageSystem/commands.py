@@ -96,7 +96,7 @@ def vim(fs: FileSystem, name: str, user_id=10):
     if flag == 1:
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
-        s = "world" * (2 ** 8)
+        s = fs.input_files()
         fs.write_back(inode, pickle.dumps(s))
         #print(inode._i_sectors_state)
         inode.write_back(fs.fp)

@@ -34,3 +34,14 @@ def form_serializer(fp,block_num):
     for _ in range(block_num):
         s+=fp.read()
     return s
+
+def input_text():
+    sentinel = 'end'  # 遇到这个就结束
+    lines = []
+    for line in iter(input, sentinel):
+        lines.append(line)
+    s = ""
+    for i in range(len(lines)):
+        s = s + lines[i] + "\n"
+    s = s[:-1]
+    return s
