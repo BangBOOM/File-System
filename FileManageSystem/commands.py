@@ -88,10 +88,26 @@ def vim(fs: FileSystem, name: str, user_id=10):
 
 def more(fs: FileSystem, name: str, user_id=10):
     """
-    展示文件内容
+    展示文件
     :param fs:
     :param name:
     :param user_i:
+    :return:
+    """
+    pass
+
+def tree(fs:FileSystem,depth,user_id=10):
+    """
+    生成文件目录结构，具体样式百度
+    .
+    └── test
+        ├── css
+        ├── img
+        │   └── head
+        └── js
+    :param fs:
+    :param depth: 打印的深度
+    :param user_id:
     :return:
     """
     pass
