@@ -23,7 +23,7 @@ class FileSystem:
         self.sp = self.load_disk()
         self.base_inode = self.get_base_inode()
         self.pwd_inode = self.base_inode
-        self.path = ['/']  # 用于存储当前路径，每个文件名是一个item
+        self.path = ['base']  # 用于存储当前路径，每个文件名是一个item
 
     def __enter__(self):
         return self
@@ -40,6 +40,9 @@ class FileSystem:
         self.base_inode.write_back(self.fp)
         self.pwd_inode.write_back(self.fp)
 
+    def get_base_dir_inode_id(self):
+        return self.sp.base_dir_inode_id
+
     def get_current_path_name(self):
         return self.path[-1]
 
@@ -53,6 +56,16 @@ class FileSystem:
         """
         self.fp.seek(0)
         return SuperBlock.form_bytes((form_serializer(self.fp, SUPER_BLOCK_NUM)))  # 加载超级块
+
+    def path_clear(self):
+        while len(self.path) > 1:
+            self.path.pop(-1)
+
+    def path_add(self, name):
+        self.path.append(name)
+
+    def path_pop(self):
+        self.path.pop(-1)
 
     def get_base_inode(self):
         """

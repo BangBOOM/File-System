@@ -28,30 +28,40 @@ def mkdir(fs: FileSystem, name: str, user_id=10):
     new_inode.write_back(fs.fp)
 
 
-def cd(fs: FileSystem, name: str, user_id=10):
+def cd(fs: FileSystem, args: str, user_id=10):
     """
-    切换目录,后续改成递归调用切换多级目录
+    切换目录,可以多级目录切换
     :param fs:
     :param name: 切换到的目录名
     :param user_id: 用户id，用于权限
     :return:
     """
-    pwd_cat = fs.load_pwd_obj()
-    if name == "..":
-        target_id = pwd_cat.parent_inode_id
-        if target_id == -1:
-            return
-    else:
-        target_id = pwd_cat.get_dir(name)
 
-    if target_id:
-        inode = fs.get_inode(target_id)
-        fs.write_back_pwd_inode()
-        fs.pwd_inode = inode
+    def change_dir(name):
+        pwd_cat = fs.load_pwd_obj()
         if name == "..":
-            fs.path.pop(-1)
+            target_id = pwd_cat.parent_inode_id
+            if target_id == -1:
+                return
+        elif name == "~":
+            target_id = fs.get_base_dir_inode_id()
         else:
-            fs.path.append(fs.get_pwd_cat_name())
+            target_id = pwd_cat.get_dir(name)
+
+        if target_id:
+            inode = fs.get_inode(target_id)
+            fs.write_back_pwd_inode()
+            fs.pwd_inode = inode
+            if name == "..":
+                fs.path_pop()
+            elif name == "~":
+                fs.path_clear()
+            else:
+                fs.path_add(fs.get_pwd_cat_name())
+
+    name_list = args.split('/')
+    for name in name_list:
+        change_dir(name)
 
 
 def touch(fs: FileSystem, name: str, user_id=10):
@@ -76,7 +86,7 @@ def vim(fs: FileSystem, name: str, user_id=10):
     pass
 
 
-def more(fs: FileSystem, name: str, user_i=10):
+def more(fs: FileSystem, name: str, user_id=10):
     """
     展示文件内容
     :param fs:
@@ -96,3 +106,7 @@ def ls(fs: FileSystem):
     pwd_cat = fs.load_pwd_obj()
     file_list = pwd_cat.file_name_and_types()
     print(' '.join([item[0] for item in file_list]))
+
+
+def rm(fs: FileSystem, name: str, user_id=10):
+    pass
