@@ -2,6 +2,8 @@
 author:Wenquan Yang
 time:2020/6/12 22:30
 """
+import getpass
+import pickle
 from config import *
 from utils import form_serializer
 from utils import split_serializer
@@ -9,6 +11,7 @@ from models import SuperBlock
 from models import INode
 from models import CatalogBlock
 from file_pointer import FilePointer
+from user import User
 
 
 class FileSystem:
@@ -24,8 +27,12 @@ class FileSystem:
         self.base_inode = self.get_base_inode()
         self.pwd_inode = self.base_inode
         self.path = ['base']  # 用于存储当前路径，每个文件名是一个item
+        self.current_user_id = ROOT_ID
+        self.current_user_name = 'root'
+        self.user_counts = 0
 
     def __enter__(self):
+        self.login()
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -39,6 +46,96 @@ class FileSystem:
         self.sp.write_back(self.fp)
         self.base_inode.write_back(self.fp)
         self.pwd_inode.write_back(self.fp)
+
+    def _get_password_file_inode_id(self):
+        pwd_cat = self.load_pwd_obj()
+        target_id = pwd_cat.get_dir('etc')
+        target_inode = self.get_inode(target_id)
+        target_dir = target_inode.get_target_obj(self.fp)
+        password_file_inode_id = target_dir.get_file('password')
+        return password_file_inode_id
+
+    def _create_password_file(self):
+        pwd_cat = self.load_pwd_obj()
+        target_id = pwd_cat.get_dir('etc')
+        target_inode = self.get_inode(target_id)
+        target_dir = target_inode.get_target_obj(self.fp)
+        new_inode = self.get_new_inode(user_id=ROOT_ID, file_type=FILE_TYPE)
+        target_dir.son_files['password'] = new_inode.i_no  # 加入文件字典
+        self.write_back(target_inode, bytes(target_dir))
+        target_inode.write_back(self.fp)
+        new_inode.write_back(self.fp)
+        return new_inode.i_no
+
+    def _init_root_user(self):
+        print("系统初始状态未创建创建root用户请设置密码")
+        flag = 3
+        password1 = 'admin'
+        while flag > 0:
+            password1 = getpass.getpass("输入密码:")
+            password2 = getpass.getpass("确认密码:")
+            if password1 == password2:
+                break
+            else:
+                print("两次密码不一致重新输入")
+            flag -= 1
+        root = User(name='root', password=password1, user_id=ROOT_ID)
+        password_file_inode_id = self._create_password_file()
+        password_file_inode = self.get_inode(inode_id=password_file_inode_id, user_id=ROOT_ID)
+        self.write_back(password_file_inode, pickle.dumps([root]))
+        password_file_inode.write_back(self.fp)
+        return password_file_inode_id
+
+    def login(self):
+        """
+        登录模块
+        :return:
+        """
+        password_file_inode_id = self._get_password_file_inode_id()
+        if not password_file_inode_id:
+            password_file_inode_id = self._init_root_user()
+        password_inode = self.get_inode(password_file_inode_id, ROOT_ID)
+        password_list = password_inode.get_target_obj(self.fp)
+        self.user_counts = len(password_list)
+        flag = 3
+        while flag > 0:
+            username = input("用户名:")
+            password = getpass.getpass("密码:")
+            for item in password_list:
+                assert isinstance(item, User)
+                if item.login(username, password):
+                    self.current_user_id = item.user_id
+                    self.current_user_name = item.name
+                    return
+            flag -= 1
+            print("用户名或密码错误")
+
+    def add_user(self):
+        password_file_inode_id = self._get_password_file_inode_id()
+        password_inode = self.get_inode(password_file_inode_id, ROOT_ID)
+        password_list = password_inode.get_target_obj(self.fp)
+        flag = 3
+        username = 'user' + str(self.user_counts)
+        password = 'admin'
+        while flag > 0:
+            user_name = input("user name:")
+            for item in password_list:
+                if user_name == item.name:
+                    print("用户名重复")
+                    flag -= 1
+                    continue
+            password1 = getpass.getpass("输入密码:")
+            password2 = getpass.getpass("确认密码:")
+            if password1 != password2:
+                print("密码不一致")
+                flag -= 1
+                continue
+            else:
+                password = password1
+                break
+        password_list.append(User(username, password, self.user_counts))
+        self.user_counts += 1
+        self.write_back(password_inode, password_list)
 
     def get_base_dir_inode_id(self):
         return self.sp.base_dir_inode_id
@@ -97,13 +194,13 @@ class FileSystem:
         """
         return self.load_pwd_obj().name
 
-    def get_new_inode(self, user_id=10):
+    def get_new_inode(self, user_id=10, file_type=DIR_TYPE):
         """
         获取新的inode
         :return:inode对象
         """
         inode_id = self.sp.get_free_inode_id(self.fp)
-        return INode(i_no=inode_id, user_id=user_id)
+        return INode(i_no=inode_id, user_id=user_id, target_type=file_type)
 
     def get_inode(self, inode_id, user_id=10):
         """

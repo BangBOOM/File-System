@@ -39,21 +39,44 @@ def initialization(fp):
         start += FREE_BLOCK_CNT
         tmp -= FREE_BLOCK_CNT
 
-    # 初始化一个根目录
+    # 初始化一个根目录    base_inode and base_dir
     inode_id = sp.get_free_inode_id(fp)
-    #print(inode_id)
-    inode = INode(inode_id, 0)
+    inode = INode(inode_id, ROOT_ID)
     dir = CatalogBlock(BASE_NAME)
-    for block in split_serializer(bytes(dir)):
-        block_id = sp.get_data_block_id(fp)
-        inode.add_block_id(block_id)
-        fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
-        fp.write(block)
+
+    # 新建root目录并写入
+    new_dir(sp, fp, dir, 'root')
+
+    # 新建etc并写入
+    new_dir(sp, fp, dir, 'etc')
+
+    # 新建home并写入
+    new_dir(sp, fp, dir, 'home')
+
+    # 写回根目录
+    dir_write_back(sp, inode, bytes(dir), fp)
     inode.write_back(fp)
 
     # 写入超级块
     sp.base_dir_inode_id = inode_id
     sp.write_back(fp)
+
+
+def new_dir(sp, fp, base_dir, name):
+    inode_id = sp.get_free_inode_id(fp)
+    inode = INode(inode_id, ROOT_ID)
+    dir = CatalogBlock(name)
+    base_dir.add_new_cat(name=name, inode_id=inode_id)
+    dir_write_back(sp, inode, bytes(dir), fp)
+    inode.write_back(fp)
+
+
+def dir_write_back(sp: SuperBlock, inode: INode, dir_b: bytes, fp):
+    for block in split_serializer(dir_b):
+        block_id = sp.get_data_block_id(fp)
+        inode.add_block_id(block_id)
+        fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
+        fp.write(block)
 
 
 if __name__ == '__main__':

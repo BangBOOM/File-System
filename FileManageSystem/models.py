@@ -186,6 +186,7 @@ class INode(Block):
         self._i_sectors = [-1] * 13  # 指向的文件/目录所在的数据块
         self._i_sectors_state = 0  # 13块存放数据的栈用了几块
         self._target_type = target_type  # 0指代文件，1指代目录
+        self.user_group = {ROOT_ID,user_id}  # 可访问用户
 
     def get_sector(self, idx):
         return self._i_sectors[idx]

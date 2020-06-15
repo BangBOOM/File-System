@@ -18,7 +18,7 @@ DATA_BLOCK_START_ID = SUPER_BLOCK_NUM + INODE_BLOCK_NUM + 1  # 数据块的起�
 INODE_SIZE = 512  # INODE占用的块区大小
 
 DISK_SIZE = BLOCK_SIZE * BLOCK_NUM  # 磁盘大小
-DISK_NAME = "../fms_y.pfs"
+DISK_NAME = "../fms_y_v2.pfs"
 DIR_NUM = 128  # 每个目录锁包含的最大文件数
 FREE_NODE_CNT = 50  # 超级块中空闲节点的最大块数
 FREE_BLOCK_CNT = 100  # 超级块中空闲数据块的最大块数
@@ -27,3 +27,5 @@ BASE_NAME = "base"  # 根目录名
 
 FILE_TYPE = 0 # 文件类型
 DIR_TYPE = 1  # 目录类型
+
+ROOT_ID = 0
