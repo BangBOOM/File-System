@@ -41,6 +41,7 @@ def initialization(fp):
 
     # 初始化一个根目录
     inode_id = sp.get_free_inode_id(fp)
+    #print(inode_id)
     inode = INode(inode_id, 0)
     dir = CatalogBlock(BASE_NAME)
     for block in split_serializer(bytes(dir)):

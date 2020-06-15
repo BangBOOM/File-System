@@ -70,6 +70,13 @@ class FileSystem:
         """
         return self.pwd_inode.get_target_obj(self.fp)
 
+    def load_files_block(self, inode: INode):
+        """
+        获取对应inode文件的内容
+        :return:反序列化的内容
+        """
+        return inode.get_target_obj(self.fp)
+
     def get_pwd_cat_name(self):
         """
         获取当前inode对应的目录的名称
@@ -84,6 +91,7 @@ class FileSystem:
         """
         inode_id = self.sp.get_free_inode_id(self.fp)
         return INode(i_no=inode_id, user_id=user_id)
+
 
     def get_inode(self, inode_id, user_id=10):
         """
