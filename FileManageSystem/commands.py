@@ -7,6 +7,16 @@ import pickle
 from config import *
 
 
+def useradd(fs: FileSystem, user_id: int):
+    """
+    添加用户
+    :param fs:
+    :param user_id:
+    :return:
+    """
+    fs.add_user(user_id)
+
+
 def mkdir(fs: FileSystem, name: str, user_id=10):
     """
     新建目录

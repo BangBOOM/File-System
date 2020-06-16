@@ -29,8 +29,13 @@ def split_serializer(b_obj: bytes) -> list:
     block_num = int(ceil(len(b_obj) / BLOCK_SIZE))  # 计算块数向上取整
     yield from [b_obj[BLOCK_SIZE * i:BLOCK_SIZE * (i + 1)] for i in range(block_num)]
 
-def form_serializer(fp,block_num):
-    s=b''
+
+def form_serializer(fp, block_num):
+    s = b''
     for _ in range(block_num):
-        s+=fp.read()
+        s += fp.read()
     return s
+
+
+def check_auth(auth_id, user_id):
+    return auth_id == user_id

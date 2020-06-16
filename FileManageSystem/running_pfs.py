@@ -19,7 +19,7 @@ def running_pfs_for_test(fs):
 def running_pfs(fs: FileSystem):
     print("Welcome to the PFS")
     while True:
-        print("root@pfs:{}".format(fs.get_current_path_name()))
+        print("{}@pfs:{}".format(fs.current_user_name, fs.get_current_path_name()))
         cmd = input("> ").split()
         if cmd[0] == "pwd":
             print(fs.pwd())

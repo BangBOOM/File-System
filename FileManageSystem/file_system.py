@@ -1,12 +1,14 @@
 """
 author:Wenquan Yang
 time:2020/6/12 22:30
+intro: 文件系统
 """
 import getpass
 import pickle
 from config import *
 from utils import form_serializer
 from utils import split_serializer
+from utils import check_auth
 from models import SuperBlock
 from models import INode
 from models import CatalogBlock
@@ -16,7 +18,7 @@ from user import User
 
 class FileSystem:
     """
-    文件系统，负责磁盘的加载与写入
+    文件系统，负责磁盘中数据的加载与写入
     对整个文件系统所有数据结构以及操作的封装，后续所有功能扩展的调用都从这里调用
     """
 
@@ -110,7 +112,10 @@ class FileSystem:
             flag -= 1
             print("用户名或密码错误")
 
-    def add_user(self):
+    def add_user(self, user_id):
+        if not check_auth(ROOT_ID, user_id):
+            print("非root账户无权新建账户")
+            return
         password_file_inode_id = self._get_password_file_inode_id()
         password_inode = self.get_inode(password_file_inode_id, ROOT_ID)
         password_list = password_inode.get_target_obj(self.fp)

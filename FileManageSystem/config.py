@@ -25,7 +25,9 @@ FREE_BLOCK_CNT = 100  # 超级块中空闲数据块的最大块数
 
 BASE_NAME = "base"  # 根目录名
 
-FILE_TYPE = 0 # 文件类型
+FILE_TYPE = 0  # 文件类型
 DIR_TYPE = 1  # 目录类型
 
 ROOT_ID = 0
+
+VERSION = "0.0.2"

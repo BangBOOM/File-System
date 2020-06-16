@@ -42,19 +42,13 @@ def initialization(fp):
     # 初始化一个根目录    base_inode and base_dir
     inode_id = sp.get_free_inode_id(fp)
     inode = INode(inode_id, ROOT_ID)
-    dir = CatalogBlock(BASE_NAME)
+    base_dir = CatalogBlock(BASE_NAME)
 
-    # 新建root目录并写入
-    new_dir(sp, fp, dir, 'root')
-
-    # 新建etc并写入
-    new_dir(sp, fp, dir, 'etc')
-
-    # 新建home并写入
-    new_dir(sp, fp, dir, 'home')
+    for file_name in ['root', 'etc', 'home']:
+        new_dir(sp, fp, base_dir, file_name, inode_id)
 
     # 写回根目录
-    dir_write_back(sp, inode, bytes(dir), fp)
+    dir_write_back(sp, inode, bytes(base_dir), fp)
     inode.write_back(fp)
 
     # 写入超级块
@@ -62,12 +56,11 @@ def initialization(fp):
     sp.write_back(fp)
 
 
-def new_dir(sp, fp, base_dir, name):
+def new_dir(sp, fp, base_dir, name, parent_inode_id):
     inode_id = sp.get_free_inode_id(fp)
     inode = INode(inode_id, ROOT_ID)
-    dir = CatalogBlock(name)
     base_dir.add_new_cat(name=name, inode_id=inode_id)
-    dir_write_back(sp, inode, bytes(dir), fp)
+    dir_write_back(sp, inode, bytes(CatalogBlock(name, parent_inode_id)), fp)
     inode.write_back(fp)
 
 
