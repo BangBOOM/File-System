@@ -14,6 +14,7 @@ from models import INode
 from models import CatalogBlock
 from file_pointer import FilePointer
 from user import User
+import os
 
 
 class FileSystem:
@@ -34,6 +35,7 @@ class FileSystem:
         self.user_counts = 0
 
     def __enter__(self):
+        os.system('cls')
         self.login()
         return self
 
@@ -50,8 +52,8 @@ class FileSystem:
         self.pwd_inode.write_back(self.fp)
 
     def _get_password_file_inode_id(self):
-        pwd_cat = self.load_pwd_obj()
-        target_id = pwd_cat.get_dir('etc')
+        base_cat = self.load_base_obj()
+        target_id = base_cat.get_dir('etc')
         target_inode = self.get_inode(target_id)
         target_dir = target_inode.get_target_obj(self.fp)
         password_file_inode_id = target_dir.get_file('password')
@@ -83,7 +85,7 @@ class FileSystem:
             flag -= 1
         root = User(name='root', password=password1, user_id=ROOT_ID)
         password_file_inode_id = self._create_password_file()
-        password_file_inode = self.get_inode(inode_id=password_file_inode_id, user_id=ROOT_ID)
+        password_file_inode = self.get_inode(inode_id=password_file_inode_id)
         self.write_back(password_file_inode, pickle.dumps([root]))
         password_file_inode.write_back(self.fp)
         return password_file_inode_id
@@ -96,7 +98,7 @@ class FileSystem:
         password_file_inode_id = self._get_password_file_inode_id()
         if not password_file_inode_id:
             password_file_inode_id = self._init_root_user()
-        password_inode = self.get_inode(password_file_inode_id, ROOT_ID)
+        password_inode = self.get_inode(password_file_inode_id)
         password_list = password_inode.get_target_obj(self.fp)
         self.user_counts = len(password_list)
         flag = 3
@@ -117,15 +119,15 @@ class FileSystem:
             print("非root账户无权新建账户")
             return
         password_file_inode_id = self._get_password_file_inode_id()
-        password_inode = self.get_inode(password_file_inode_id, ROOT_ID)
+        password_inode = self.get_inode(password_file_inode_id)
         password_list = password_inode.get_target_obj(self.fp)
         flag = 3
         username = 'user' + str(self.user_counts)
         password = 'admin'
         while flag > 0:
-            user_name = input("user name:")
+            username = input("输入用户名:")
             for item in password_list:
-                if user_name == item.name:
+                if username == item.name:
                     print("用户名重复")
                     flag -= 1
                     continue
@@ -140,7 +142,8 @@ class FileSystem:
                 break
         password_list.append(User(username, password, self.user_counts))
         self.user_counts += 1
-        self.write_back(password_inode, password_list)
+        self.write_back(password_inode, pickle.dumps(password_list))
+        return username, self.user_counts - 1
 
     def get_base_dir_inode_id(self):
         return self.sp.base_dir_inode_id
@@ -185,6 +188,13 @@ class FileSystem:
         """
         return self.pwd_inode.get_target_obj(self.fp)
 
+    def load_base_obj(self):
+        """
+        获取base_inode对应的目录对象
+        :return:
+        """
+        return self.base_inode.get_target_obj(self.fp)
+
     def load_files_block(self, inode: INode):
         """
         获取对应inode文件的内容
@@ -207,27 +217,29 @@ class FileSystem:
         inode_id = self.sp.get_free_inode_id(self.fp)
         return INode(i_no=inode_id, user_id=user_id, target_type=file_type)
 
-    def get_inode(self, inode_id, user_id=10):
+    def get_inode(self, inode_id):
         """
         获取inode对象
         :param inode_id:
-        :param user_id:
         :return:
         """
         self.fp.seek((INODE_BLOCK_START_ID + inode_id) * BLOCK_SIZE)
         inode = INode.form_bytes(self.fp.read())
         return inode
 
-    def get_new_cat(self, name, parent_inode_id):
+    @staticmethod
+    def get_new_cat(name, parent_inode_id):
         return CatalogBlock(name, parent_inode_id)
 
     def write_back(self, inode: INode, serializer: bytes):
         """
         申请空闲的数据块并将id添加到inode的栈中
         写回新建的目录或者是文本
+        :param inode:
         :param serializer:
         :return:
         """
+        assert isinstance(serializer, bytes)
         i_sectors = inode.i_sectors
         k = 0
         inode.clear()
@@ -255,7 +267,7 @@ class FileSystem:
         """
         self.pwd_inode.write_back(self.fp)
 
-    def free_up_inode(self, inode_id: int, user_id=10):
+    def free_up_inode(self, inode_id: int):
         """
         释放文件对应的inode，同时级联释放inode指向的空间
         如果指向的是inode指向的是目录则递归删除

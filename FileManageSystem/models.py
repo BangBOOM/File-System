@@ -353,7 +353,7 @@ class CatalogBlock(Block):
             self.son_dirs.pop(name)
 
     def file_name_and_types(self):
-        return [(key, 1) for key in self.son_dirs.keys()] + [(key, 0) for key in self.son_files.keys()]
+        return [(key, DIR_TYPE) for key in self.son_dirs.keys()] + [(key, FILE_TYPE) for key in self.son_files.keys()]
 
     def is_exist_son_files(self, name):
         """
