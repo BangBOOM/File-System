@@ -5,7 +5,7 @@ intro:文件系统实际运行部分
 """
 from file_system import FileSystem
 from file_system import file_system_func
-from commands import mkdir, ls, cd, touch, vim, more, rm
+from commands import mkdir, ls, cd, touch, vim, more, rm, tree
 
 
 @file_system_func
@@ -35,6 +35,8 @@ def running_pfs(fs: FileSystem):
             vim(fs, cmd[1])
         elif cmd[0] == 'more':
             more(fs, cmd[1])
+        elif cmd[0] == 'tree':
+            tree(fs, 2, 0)
         elif cmd[0] == 'rm':
             rm(fs, cmd[1:])
         elif cmd[0] == "exit":

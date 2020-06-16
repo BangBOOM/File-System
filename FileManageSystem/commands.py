@@ -144,7 +144,7 @@ def more(fs: FileSystem, name: str, user_id=10):
         print(text)
 
 
-def tree(fs: FileSystem, depth, user_id=10):
+def tree(fs: FileSystem, depth: int ,user_id: int, level = 0):
     """
     生成文件目录结构，具体样式百度
     .
@@ -158,7 +158,20 @@ def tree(fs: FileSystem, depth, user_id=10):
     :param user_id:
     :return:
     """
-    pass
+    if depth == 0:
+        return
+    pwd_cat = fs.load_pwd_obj()  # 当前目
+    file_list = pwd_cat.file_name_and_types()
+    for name, flag in file_list:
+        if flag == 0:  # 文件夹
+            print("│   " * level, end="")
+            print("├──", name)
+            cd(fs, name, user_id)
+            tree(fs, depth - 1, user_id, level + 1)
+            cd(fs, "..", user_id)
+        if flag == 1:  # 文件
+            print("│   " * level, end="")
+            print("├──", name)
 
 
 def ls(fs: FileSystem):
