@@ -3,51 +3,23 @@ author:Wenquan Yang
 time:2020/6/12 22:50
 intro:文件系统实际运行部分
 """
+import commands
 from file_system import FileSystem
 from file_system import file_system_func
-from commands import mkdir, ls, cd, touch, vim, more, rm, tree, useradd, su
-import os
-
-
-@file_system_func
-def running_pfs_for_test(fs):
-    for i in range(10):
-        mkdir(fs, "hello" + str(i))
-    ls(fs)
 
 
 @file_system_func
 def running_pfs(fs: FileSystem):
-    print("Welcome to the PFS")
     while True:
         print("{}@pfs:{}".format(fs.current_user_name, fs.get_current_path_name()))
         cmd = input("> ").split()
-        if cmd[0] == "pwd":
-            print(fs.pwd())
-        elif cmd[0] == "useradd":
-            useradd(fs)
-        elif cmd[0] == "su":
-            su(fs, cmd[1])
-        elif cmd[0] == "cls" or cmd[0] == "clear":
-            os.system('cls')
-        elif cmd[0] == 'mkdir':
-            mkdir(fs, cmd[1])
-        elif cmd[0] == 'ls':
-            ls(fs)
-        elif cmd[0] == 'cd':
-            cd(fs, cmd[1])
-        elif cmd[0] == 'touch':
-            touch(fs, cmd[1])
-        elif cmd[0] == 'vim':
-            vim(fs, cmd[1])
-        elif cmd[0] == 'more':
-            more(fs, cmd[1])
-        elif cmd[0] == 'tree':
-            tree(fs, cmd[1:])
-        elif cmd[0] == 'rm':
-            rm(fs, cmd[1:])
-        elif cmd[0] == "exit":
+        if cmd[0] == 'exit':
             break
+        try:
+            func = getattr(commands, cmd[0])
+            func(fs, *cmd[1:])
+        except AttributeError:
+            print("命令不支持")
 
 
 def main():

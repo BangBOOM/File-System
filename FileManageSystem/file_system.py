@@ -35,8 +35,9 @@ class FileSystem:
         self.user_counts = 0
 
     def __enter__(self):
-        os.system('cls')
+        self.clear()
         self.login()
+        self.show_info()
         if self.current_user_name != ROOT:
             self.chdir(f'home/{self.current_user_name}')
         else:
@@ -331,6 +332,14 @@ class FileSystem:
                 self.free_up_inode(son_inode_id)
         for i in range(inode.i_sectors_state):
             self.sp.free_up_inode_block(self.fp, inode.get_sector(i))
+
+    def show_info(self):
+        self.clear()
+        print("Welcome to the PFS")
+        print(LOGO)
+
+    def clear(self):
+        os.system('cls')
 
 
 def file_system_func(func):

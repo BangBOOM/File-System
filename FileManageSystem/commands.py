@@ -8,7 +8,7 @@ from config import *
 from file_system import FileSystem
 
 
-def useradd(fs: FileSystem):
+def useradd(fs: FileSystem, *args):
     """
     添加用户，并将用户目录挂载到base/home/下
     :param fs:
@@ -39,6 +39,18 @@ def useradd(fs: FileSystem):
     # 写回对应的被修改的节点
     new_inode.write_back(fs.fp)
     home_inode.write_back(fs.fp)
+
+
+def pwd(fs: FileSystem):
+    print(fs.pwd())
+
+
+def clear(fs: FileSystem):
+    fs.clear()
+
+
+def cls(fs: FileSystem):
+    fs.clear()
 
 
 def su(fs: FileSystem, username: str):
@@ -181,7 +193,7 @@ def tree_x(fs: FileSystem, depth: int, level=0):
             print("├──", name)
 
 
-def tree(fs: FileSystem, args: list):
+def tree(fs: FileSystem, *args):
     depth = 1
     if args:
         if args[0] == '-d':
@@ -202,7 +214,7 @@ def ls(fs: FileSystem):
     print(' '.join([item[0] for item in file_list]))
 
 
-def rm(fs: FileSystem, args: list):
+def rm(fs: FileSystem, *args):
     """
     删除文件
     :param fs:
