@@ -186,7 +186,7 @@ class INode(Block):
         self._i_sectors = [-1] * 13  # 指向的文件/目录所在的数据块
         self._i_sectors_state = 0  # 13块存放数据的栈用了几块
         self._target_type = target_type  # 0指代文件，1指代目录
-        self.user_group = {ROOT_ID,user_id}  # 可访问用户
+        self.user_group = {ROOT_ID, user_id}  # 可访问用户
 
     def get_sector(self, idx):
         return self._i_sectors[idx]
@@ -203,8 +203,7 @@ class INode(Block):
 
     def get_target_obj(self, fp):
         if self.target_type == 0 and self._i_sectors_state == 0:
-            error = "文件没有写入内容"
-            return error
+            return None
         s = b''
         for block_id in self._i_sectors[:self._i_sectors_state]:
             fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)

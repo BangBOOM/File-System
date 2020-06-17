@@ -7,6 +7,7 @@ import pickle
 from config import *
 from utils import check_auth
 from file_system import FileSystem
+from file_ui import TextEdit
 
 
 def useradd(fs: FileSystem):
@@ -25,6 +26,9 @@ def useradd(fs: FileSystem):
     home_id = base_cat.get_dir('home')
     home_inode = fs.get_inode(home_id)
     home_cat = home_inode.get_target_obj(fs.fp)
+
+    if not home_cat:
+        return
 
     # 获取新的目录的inode，并添加到home目录中
     new_inode = fs.get_new_inode(user_id=user_id)
@@ -201,7 +205,12 @@ def vim(fs: FileSystem, name: str):
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
         if check_auth(inode.user_id, fs.current_user_id):
-            s = "world" * (2 ** 8)
+            flag, s = fs.load_files_block(inode)
+            if not s:
+                s = ''
+            te = TextEdit(s)
+            te.run()
+            s = te.s
             fs.write_back(inode, pickle.dumps(s))
             inode.write_back(fs.fp)
         else:

@@ -23,7 +23,7 @@ def serializer(text: str) -> list:
 def split_serializer(b_obj: bytes) -> list:
     """
     输入字节流按照block大小切分
-    :param b_text:
+    :param b_obj:
     :return:
     """
     block_num = int(ceil(len(b_obj) / BLOCK_SIZE))  # 计算块数向上取整
@@ -34,17 +34,6 @@ def form_serializer(fp, block_num):
     s = b''
     for _ in range(block_num):
         s += fp.read()
-    return s
-
-def input_text():
-    sentinel = 'end'  # 遇到这个就结束
-    lines = []
-    for line in iter(input, sentinel):
-        lines.append(line)
-    s = ""
-    for i in range(len(lines)):
-        s = s + lines[i] + "\n"
-    s = s[:-1]
     return s
 
 
