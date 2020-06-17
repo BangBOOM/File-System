@@ -8,6 +8,7 @@ import pickle
 import time
 from config import *
 from utils import split_serializer
+from utils import color
 
 
 class Block:
@@ -352,7 +353,8 @@ class CatalogBlock(Block):
             self.son_dirs.pop(name)
 
     def file_name_and_types(self):
-        return [(key, DIR_TYPE) for key in self.son_dirs.keys()] + [(key, FILE_TYPE) for key in self.son_files.keys()]
+        return [(key, DIR_TYPE) for key in self.son_dirs.keys()] \
+               + [(key, FILE_TYPE) for key in self.son_files.keys()]
 
     def is_exist_son_files(self, name):
         """

@@ -6,6 +6,7 @@ intro:命令模块
 import pickle
 from config import *
 from utils import check_auth
+from utils import color
 from file_system import FileSystem
 from file_ui import TextEdit
 
@@ -261,14 +262,14 @@ def tree_x(fs: FileSystem, depth: int, level=0):
     for name, flag in file_list:
         if flag == DIR_TYPE:  # 文件夹
             print("│   " * level, end="")
-            print("├──", name)
+            print("├──", color(name, DIR_COLOR_F, DIR_COLOR_B))
             flag_x = fs.ch_sig_dir(name, info=False)
             if flag_x:
                 tree_x(fs, depth - 1, level + 1)
                 fs.ch_sig_dir("..")
         if flag == FILE_TYPE:  # 文件
             print("│   " * level, end="")
-            print("├──", name)
+            print("├──", color(name, FILE_COLOR_F, FILE_COLOR_B))
 
 
 def tree(fs: FileSystem, *args):
@@ -289,7 +290,21 @@ def ls(fs: FileSystem):
     """
     pwd_cat = fs.load_pwd_obj()
     file_list = pwd_cat.file_name_and_types()
-    print(' '.join([item[0] for item in file_list]))
+    for name, flag in file_list:
+        if flag == DIR_TYPE:
+            print(color(name, DIR_COLOR_F, DIR_COLOR_B), end=' ')
+        elif flag == FILE_TYPE:
+            print(color(name, FILE_COLOR_F, FILE_COLOR_B), end=' ')
+    print()
+
+
+def ll(fs: FileSystem):
+    """
+    打印当前目录下的具体信息
+    :param fs:
+    :return:
+    """
+    pass
 
 
 def rm(fs: FileSystem, *args):

@@ -3,10 +3,10 @@ author:Wenquan Yang
 time:2020/6/10 2:35
 content:各种工具脚本
 """
-
+import time
 import pickle
 from math import ceil
-from config import BLOCK_SIZE, ROOT_ID
+from config import BLOCK_SIZE, ROOT_ID, VERSION
 
 
 def serializer(text: str) -> list:
@@ -39,3 +39,19 @@ def form_serializer(fp, block_num):
 
 def check_auth(auth_id, user_id):
     return auth_id == user_id or user_id == ROOT_ID
+
+
+def color(filename: str, front_color: str, back_color: str):
+    filenames = '\33[0;' + front_color + ';' + back_color + 'm' + filename + '\33[0m'
+    return filenames
+
+
+def bar(user_name, current_path):
+    time_now = time.strftime(" %H:%M:%S ", time.localtime())
+    time_now = color(time_now, "30", "47")
+    user_name = color(' ' + user_name + '@PFS ', "37", "40")
+    current_path = color(' >' + current_path + ' ', "37", "44")
+    version = color(' V' + VERSION + ' ', "31", "42")
+    cmd_in = color('> ', "44", "40")
+    print(time_now + user_name + version + current_path)
+    print(cmd_in, end="")

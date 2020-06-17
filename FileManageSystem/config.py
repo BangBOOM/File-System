@@ -42,3 +42,10 @@ LOGO = """
  / ____// __/   ___/ /
 /_/    /_/     /____/
                        """
+
+# color
+FILE_COLOR_F = "37"  # 文件名前景色
+FILE_COLOR_B = "40"  # 文件名背景色
+
+DIR_COLOR_F = "32"
+DIR_COLOR_B = "40"
