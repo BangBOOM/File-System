@@ -4,6 +4,7 @@ time:2020/6/14 20:18
 """
 from file_system import FileSystem
 import pickle
+from file_ui import TextUi
 
 def mkdir(fs: FileSystem, name: str, user_id=10):
     """
@@ -96,10 +97,14 @@ def vim(fs: FileSystem, name: str, user_id=10):
     if flag == 1:
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
-        s = fs.input_files()
-        fs.write_back(inode, pickle.dumps(s))
-        #print(inode._i_sectors_state)
-        inode.write_back(fs.fp)
+        text = fs.load_files_block(inode)
+        tu = TextUi(text)
+        tu.run()
+        s = tu.s
+        if tu.flag:
+            fs.write_back(inode, pickle.dumps(s))
+            #print(inode._i_sectors_state)
+            inode.write_back(fs.fp)
 
 
 
