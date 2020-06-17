@@ -8,7 +8,7 @@ from config import *
 from file_system import FileSystem
 
 
-def useradd(fs: FileSystem, *args):
+def useradd(fs: FileSystem):
     """
     添加用户，并将用户目录挂载到base/home/下
     :param fs:
@@ -75,6 +75,18 @@ def mkdir(fs: FileSystem, name: str):
     :param name: 文件夹名称
     :return:
     """
+    if name=='-h':
+        print("""
+        新建文件夹
+            获得当前目录对象pwd_obj
+            检查命名冲突，pwd_obj.check_name(name)
+            获取新的inode对象
+            将新建文件夹的名字和inode号作为键值对写回pwd_obj
+            写回新建的目录对象new_obj，并且将其开辟的新的地址块号添加到对应的inode对象中
+            写回新的inode对象
+        """)
+        return
+
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag, info = pwd_cat.check_name(name)
     if not flag:
@@ -89,14 +101,65 @@ def mkdir(fs: FileSystem, name: str):
     new_inode.write_back(fs.fp)
 
 
-def cd(fs: FileSystem, args: str):
+def cd(fs: FileSystem, *args: str):
     """
     切换目录,可以多级目录切换
     :param fs:
     :param args: 切换到的目录名
     :return:
     """
-    fs.chdir(args)
+    if args[0] == '-h':
+        print("""
+        切换目录
+            dirName:要切换到的目标目录名
+            cd hello 切换一级目录
+            cd hello\hello 切换多级目录
+            cd ..\.. 切换上层目录
+            cd ~ 切换到根目录
+        """)
+        return
+
+    fs.chdir(args[0])
+
+
+def cp(fs: FileSystem, *args):
+    """
+    复制文件/目录参数-r
+    :param fs:
+    :param args:
+    :return:
+    """
+    if args[0] == '-r':
+        path_src = args[1]
+        path_tgt = args[2]
+    else:
+        path_src = args[0]
+        path_tgt = args[1]
+
+
+def mv(fs: FileSystem, *args):
+    """
+    剪切文件或目录     mv home/ywq/demo home/caohang
+    :param fs:
+    :param args:
+    :return:
+    """
+    path_src = args[0]  # home/ywq/demo
+    path_tgt = args[1]  # home/caohang
+    cd(fs, '/'.join(path_src.split('/')[:-1]))
+    # del demo...
+    cd(fs, '/'.join(['..'] * 2))
+
+
+def rename(fs: FileSystem, name1, name2):
+    """
+    修改名字 rename name1 name2
+    :param fs:
+    :param name1: 当前文件或目录的名字
+    :param name2: 目标名字
+    :return:
+    """
+    pass
 
 
 def touch(fs: FileSystem, name: str):
