@@ -56,38 +56,55 @@ class FileSystem:
         self.base_inode.write_back(self.fp)
         self.pwd_inode.write_back(self.fp)
 
+    def ch_sig_dir(self, name, info=True):
+        """
+        单级目录切换
+        :param name:
+        :return:
+        """
+        pwd_cat = self.load_pwd_obj()
+        if name == "..":
+            target_id = pwd_cat.parent_inode_id
+            if target_id == -1:
+                return False
+        elif name == "~":
+            target_id = self.get_base_dir_inode_id()
+        else:
+            target_id = pwd_cat.get_dir(name)
+
+        if target_id:
+            inode = self.get_inode(target_id)
+
+            if not check_auth(inode.user_id, self.current_user_id):
+                if self.current_user_id != ROOT_ID:
+                    if name not in [*INIT_DIRS, "~"]:
+                        if name == '..' and self.path[-2] in [*INIT_DIRS, BASE_NAME]:
+                            pass
+                        else:
+                            if info:
+                                print("cannot open directory .: Permission denied")
+                            return False
+            self.write_back_pwd_inode()
+            self.pwd_inode = inode
+            if name == "..":
+                self.path_pop()
+            elif name == "~":
+                self.path_clear()
+            else:
+                self.path_add(self.get_pwd_cat_name())
+            return True
+        return False
+
     def chdir(self, args):
         """
         切换目录
         :param args:
         :return:
         """
-
-        def change_dir(name):
-            pwd_cat = self.load_pwd_obj()
-            if name == "..":
-                target_id = pwd_cat.parent_inode_id
-                if target_id == -1:
-                    return
-            elif name == "~":
-                target_id = self.get_base_dir_inode_id()
-            else:
-                target_id = pwd_cat.get_dir(name)
-
-            if target_id:
-                inode = self.get_inode(target_id)
-                self.write_back_pwd_inode()
-                self.pwd_inode = inode
-                if name == "..":
-                    self.path_pop()
-                elif name == "~":
-                    self.path_clear()
-                else:
-                    self.path_add(self.get_pwd_cat_name())
-
         name_list = args.split('/')
         for name in name_list:
-            change_dir(name)
+            if not self.ch_sig_dir(name):
+                break
 
     def _get_password_file_inode_id(self):
         base_cat = self.load_base_obj()
@@ -252,7 +269,10 @@ class FileSystem:
         获取对应inode文件的内容
         :return:反序列化的内容
         """
-        return inode.get_target_obj(self.fp)
+        if check_auth(inode.user_id, self.current_user_id):
+            return True, inode.get_target_obj(self.fp)
+        else:
+            return False, None
 
     def get_pwd_cat_name(self):
         """
@@ -326,12 +346,15 @@ class FileSystem:
         :return:
         """
         inode = self.get_inode(inode_id)
+        if not check_auth(inode.user_id, self.current_user_id):
+            return False
         if inode.target_type == DIR_TYPE:
             inode_target = inode.get_target_obj(self.fp)
             for son_inode_id in inode_target.get_all_son_inode():
                 self.free_up_inode(son_inode_id)
         for i in range(inode.i_sectors_state):
             self.sp.free_up_inode_block(self.fp, inode.get_sector(i))
+        return True
 
     def show_info(self):
         self.clear()

@@ -6,7 +6,7 @@ content:各种工具脚本
 
 import pickle
 from math import ceil
-from config import BLOCK_SIZE
+from config import BLOCK_SIZE, ROOT_ID
 
 
 def serializer(text: str) -> list:
@@ -38,4 +38,4 @@ def form_serializer(fp, block_num):
 
 
 def check_auth(auth_id, user_id):
-    return auth_id == user_id
+    return auth_id == user_id or user_id == ROOT_ID

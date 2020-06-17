@@ -5,6 +5,7 @@ intro:命令模块
 """
 import pickle
 from config import *
+from utils import check_auth
 from file_system import FileSystem
 
 
@@ -75,7 +76,7 @@ def mkdir(fs: FileSystem, name: str):
     :param name: 文件夹名称
     :return:
     """
-    if name=='-h':
+    if name == '-h':
         print("""
         新建文件夹
             获得当前目录对象pwd_obj
@@ -106,7 +107,7 @@ def cd(fs: FileSystem, *args: str):
     切换目录,可以多级目录切换
     :param fs:
     :param args: 切换到的目录名
-    :return:
+    :return: True/False 表示切换是否完全成功
     """
     if args[0] == '-h':
         print("""
@@ -117,9 +118,8 @@ def cd(fs: FileSystem, *args: str):
             cd ..\.. 切换上层目录
             cd ~ 切换到根目录
         """)
-        return
-
-    fs.chdir(args[0])
+    else:
+        fs.chdir(args[0])
 
 
 def cp(fs: FileSystem, *args):
@@ -178,8 +178,6 @@ def touch(fs: FileSystem, name: str):
     new_inode = fs.get_new_inode(user_id=fs.current_user_id)
     new_inode.target_type = 0  # 文件
     pwd_cat.son_files[name] = new_inode.i_no  # 加入文件字典
-    # new_cat = fs.get_new_cat(name=name, parent_inode_id=fs.pwd_inode.i_no)
-    # fs.write_back(new_inode, bytes(new_cat))
     fs.write_back(fs.pwd_inode, bytes(pwd_cat))
     new_inode.write_back(fs.fp)
 
@@ -194,15 +192,20 @@ def vim(fs: FileSystem, name: str):
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag = pwd_cat.is_exist_son_files(name)
     if flag == -1:
-        print("{} 文件不存在".format(name))
+        touch(fs, name)
+        vim(fs, name)
+        return
     if flag == DIR_TYPE:
         print("{} 是文件夹".format(name))
     if flag == FILE_TYPE:
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
-        s = "world" * (2 ** 8)
-        fs.write_back(inode, pickle.dumps(s))
-        inode.write_back(fs.fp)
+        if check_auth(inode.user_id, fs.current_user_id):
+            s = "world" * (2 ** 8)
+            fs.write_back(inode, pickle.dumps(s))
+            inode.write_back(fs.fp)
+        else:
+            print("cannot edit file .: Permission denied")
 
 
 def more(fs: FileSystem, name: str):
@@ -221,9 +224,11 @@ def more(fs: FileSystem, name: str):
     if flag == FILE_TYPE:
         inode_io = pwd_cat.son_files[name]
         inode = fs.get_inode(inode_id=inode_io)
-        # print(inode._i_sectors_state)
-        text = fs.load_files_block(inode)
-        print(text)
+        flag, text = fs.load_files_block(inode)
+        if flag:
+            print(text)
+        else:
+            print("cannot open file .: Permission denied")
 
 
 def tree_x(fs: FileSystem, depth: int, level=0):
@@ -248,9 +253,10 @@ def tree_x(fs: FileSystem, depth: int, level=0):
         if flag == DIR_TYPE:  # 文件夹
             print("│   " * level, end="")
             print("├──", name)
-            cd(fs, name)
-            tree_x(fs, depth - 1, level + 1)
-            cd(fs, "..")
+            flag_x = fs.ch_sig_dir(name, info=False)
+            if flag_x:
+                tree_x(fs, depth - 1, level + 1)
+                fs.ch_sig_dir("..")
         if flag == FILE_TYPE:  # 文件
             print("│   " * level, end="")
             print("├──", name)
@@ -312,8 +318,10 @@ def rm(fs: FileSystem, *args):
             inode_id = pwd_cat.get_file(name)
 
         if inode_id != -1:
-            fs.free_up_inode(inode_id)
-
-            # 从当前目录中删除并讲当前目录写回
-            pwd_cat.remove(name, flag)
-            fs.write_back(fs.pwd_inode, bytes(pwd_cat))
+            flag_x = fs.free_up_inode(inode_id)
+            if flag_x:
+                # 从当前目录中删除并将当前目录写回
+                pwd_cat.remove(name, flag)
+                fs.write_back(fs.pwd_inode, bytes(pwd_cat))
+            else:
+                print("cannot delete directory/file .: Permission denied")
