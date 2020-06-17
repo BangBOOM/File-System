@@ -44,7 +44,7 @@ def initialization(fp):
     inode = INode(inode_id, ROOT_ID)
     base_dir = CatalogBlock(BASE_NAME)
 
-    for file_name in ['root', 'etc', 'home']:
+    for file_name in INIT_DIRS:
         new_dir(sp, fp, base_dir, file_name, inode_id)
 
     # 写回根目录

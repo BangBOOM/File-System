@@ -3,6 +3,7 @@ author:Wenquan Yang
 time:2020/6/12 22:30
 intro: 文件系统
 """
+import os
 import getpass
 import pickle
 from config import *
@@ -14,7 +15,6 @@ from models import INode
 from models import CatalogBlock
 from file_pointer import FilePointer
 from user import User
-import os
 
 
 class FileSystem:
@@ -37,6 +37,10 @@ class FileSystem:
     def __enter__(self):
         os.system('cls')
         self.login()
+        if self.current_user_name != ROOT:
+            self.chdir(f'home/{self.current_user_name}')
+        else:
+            self.chdir(f'{ROOT}')
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -50,6 +54,39 @@ class FileSystem:
         self.sp.write_back(self.fp)
         self.base_inode.write_back(self.fp)
         self.pwd_inode.write_back(self.fp)
+
+    def chdir(self, args):
+        """
+        切换目录
+        :param args:
+        :return:
+        """
+
+        def change_dir(name):
+            pwd_cat = self.load_pwd_obj()
+            if name == "..":
+                target_id = pwd_cat.parent_inode_id
+                if target_id == -1:
+                    return
+            elif name == "~":
+                target_id = self.get_base_dir_inode_id()
+            else:
+                target_id = pwd_cat.get_dir(name)
+
+            if target_id:
+                inode = self.get_inode(target_id)
+                self.write_back_pwd_inode()
+                self.pwd_inode = inode
+                if name == "..":
+                    self.path_pop()
+                elif name == "~":
+                    self.path_clear()
+                else:
+                    self.path_add(self.get_pwd_cat_name())
+
+        name_list = args.split('/')
+        for name in name_list:
+            change_dir(name)
 
     def _get_password_file_inode_id(self):
         base_cat = self.load_base_obj()
@@ -90,7 +127,7 @@ class FileSystem:
         password_file_inode.write_back(self.fp)
         return password_file_inode_id
 
-    def login(self):
+    def login(self, username=None):
         """
         登录模块
         :return:
@@ -101,18 +138,32 @@ class FileSystem:
         password_inode = self.get_inode(password_file_inode_id)
         password_list = password_inode.get_target_obj(self.fp)
         self.user_counts = len(password_list)
-        flag = 3
-        while flag > 0:
-            username = input("用户名:")
-            password = getpass.getpass("密码:")
+        if not username:
+            flag = 3
+            while flag > 0:
+                username = input("用户名:")
+                password = getpass.getpass("密码:")
+                for item in password_list:
+                    assert isinstance(item, User)
+                    if item.login(username, password):
+                        self.current_user_id = item.user_id
+                        self.current_user_name = item.name
+                        return True
+                flag -= 1
+                print("用户名或密码错误")
+            exit(0)
+        else:
+            password = None
+            if self.current_user_id != ROOT_ID:
+                password = getpass.getpass("密码:")
             for item in password_list:
                 assert isinstance(item, User)
-                if item.login(username, password):
+                if item.login(username, password, root_user=True):
                     self.current_user_id = item.user_id
                     self.current_user_name = item.name
-                    return
-            flag -= 1
+                    return True
             print("用户名或密码错误")
+            return False
 
     def add_user(self, user_id):
         if not check_auth(ROOT_ID, user_id):

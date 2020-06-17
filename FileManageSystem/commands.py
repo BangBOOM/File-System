@@ -1,10 +1,11 @@
 """
 author:Wenquan Yang
 time:2020/6/14 20:18
+intro:命令模块
 """
-from file_system import FileSystem
 import pickle
 from config import *
+from file_system import FileSystem
 
 
 def useradd(fs: FileSystem):
@@ -40,6 +41,20 @@ def useradd(fs: FileSystem):
     home_inode.write_back(fs.fp)
 
 
+def su(fs: FileSystem, username: str):
+    """
+    切换当前用户指令
+    :param fs:
+    :param username:
+    :return:
+    """
+    if fs.login(username=username):
+        if username != 'root':
+            cd(fs, f'~/home/{username}')
+        else:
+            cd(fs, f'~/{ROOT}')
+
+
 def mkdir(fs: FileSystem, name: str):
     """
     新建目录
@@ -69,32 +84,7 @@ def cd(fs: FileSystem, args: str):
     :param args: 切换到的目录名
     :return:
     """
-
-    def change_dir(name):
-        pwd_cat = fs.load_pwd_obj()
-        if name == "..":
-            target_id = pwd_cat.parent_inode_id
-            if target_id == -1:
-                return
-        elif name == "~":
-            target_id = fs.get_base_dir_inode_id()
-        else:
-            target_id = pwd_cat.get_dir(name)
-
-        if target_id:
-            inode = fs.get_inode(target_id)
-            fs.write_back_pwd_inode()
-            fs.pwd_inode = inode
-            if name == "..":
-                fs.path_pop()
-            elif name == "~":
-                fs.path_clear()
-            else:
-                fs.path_add(fs.get_pwd_cat_name())
-
-    name_list = args.split('/')
-    for name in name_list:
-        change_dir(name)
+    fs.chdir(args)
 
 
 def touch(fs: FileSystem, name: str):

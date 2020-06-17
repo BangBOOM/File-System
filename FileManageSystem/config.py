@@ -29,5 +29,8 @@ FILE_TYPE = 0  # 文件类型
 DIR_TYPE = 1  # 目录类型
 
 ROOT_ID = 0
+ROOT = 'root'
+
+INIT_DIRS = ['root', 'home', 'etc']
 
 VERSION = "0.0.2"
