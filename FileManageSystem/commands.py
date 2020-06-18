@@ -179,6 +179,9 @@ def mv(fs: FileSystem, *args):
     if flag == FILE_TYPE:
         pwd_cat_new.son_files[name] = inode_io
     if flag == DIR_TYPE:
+        inode = fs.get_inode(inode_io)
+        new_cat = inode.get_target_obj(fs.fp)
+        new_cat.parent_inode_id = fs.pwd_inode.i_no
         pwd_cat_new.son_dirs[name] = inode_io
     fs.write_back(fs.pwd_inode, bytes(pwd_cat_new))
     cd(fs, '/'.join(['..'] * cnt2))
