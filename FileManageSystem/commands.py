@@ -4,6 +4,7 @@ time:2020/6/14 20:18
 intro:命令模块
 """
 import pickle
+from threading import Thread
 from config import *
 from utils import check_auth
 from utils import color
@@ -182,7 +183,7 @@ def touch(fs: FileSystem, name: str):
 
     new_inode = fs.get_new_inode(user_id=fs.current_user_id)
     new_inode.target_type = 0  # 文件
-    pwd_cat.son_files[name] = new_inode.i_no  # 加入文件字典
+    pwd_cat.add_new_file(name, new_inode.i_no)
     fs.write_back(fs.pwd_inode, bytes(pwd_cat))
     new_inode.write_back(fs.fp)
 
@@ -203,19 +204,23 @@ def vim(fs: FileSystem, name: str):
     if flag == DIR_TYPE:
         print("{} 是文件夹".format(name))
     if flag == FILE_TYPE:
-        inode_io = pwd_cat.son_files[name]
-        inode = fs.get_inode(inode_id=inode_io)
-        if check_auth(inode.user_id, fs.current_user_id):
-            flag, s = fs.load_files_block(inode)
-            if not s:
-                s = ''
-            te = TextEdit(s)
-            te.run()
-            s = te.s
-            fs.write_back(inode, pickle.dumps(s))
-            inode.write_back(fs.fp)
-        else:
-            print("cannot edit file .: Permission denied")
+        def func():
+            inode_io = pwd_cat.get_file(name)
+            inode = fs.get_inode(inode_id=inode_io)
+            if check_auth(inode.user_id, fs.current_user_id):
+                flag, s = fs.load_files_block(inode)
+                if not s:
+                    s = ''
+                te = TextEdit(s)
+                te.run()
+                s = te.s
+                fs.write_back(inode, pickle.dumps(s))
+                inode.write_back(fs.fp)
+            else:
+                print("cannot edit file .: Permission denied")
+
+        vim_thread = Thread(target=func)
+        vim_thread.start()
 
 
 def more(fs: FileSystem, name: str):
@@ -232,7 +237,7 @@ def more(fs: FileSystem, name: str):
     if flag == DIR_TYPE:
         print("{} 是文件夹".format(name))
     if flag == FILE_TYPE:
-        inode_io = pwd_cat.son_files[name]
+        inode_io = pwd_cat.get_file(name)
         inode = fs.get_inode(inode_id=inode_io)
         flag, text = fs.load_files_block(inode)
         if flag:
@@ -304,7 +309,7 @@ def ll(fs: FileSystem):
     :param fs:
     :return:
     """
-    pass
+    fs.show_ll_info()
 
 
 def rm(fs: FileSystem, *args):

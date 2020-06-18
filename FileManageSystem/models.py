@@ -8,7 +8,6 @@ import pickle
 import time
 from config import *
 from utils import split_serializer
-from utils import color
 
 
 class Block:
@@ -203,7 +202,7 @@ class INode(Block):
         self._i_sectors_state = 0
 
     def get_target_obj(self, fp):
-        if self.target_type == 0 and self._i_sectors_state == 0:
+        if self._i_sectors_state == 0:
             return None
         s = b''
         for block_id in self._i_sectors[:self._i_sectors_state]:
@@ -212,7 +211,28 @@ class INode(Block):
         if self.target_type == 1:
             return CatalogBlock.form_bytes(s)
         else:
+            self._atime = time.time()  # 文件则修改打开时间
             return pickle.loads(s)
+
+    def show_ll_info(self, fp):
+        """
+        使用ll指令时的单条信息
+        :param fp
+        :return: str
+        """
+        count = 1
+        if self.target_type == DIR_TYPE:
+            target_dir = self.get_target_obj(fp)
+            count = target_dir.counts
+        time_x = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self._mtime))
+        size_x = BLOCK_SIZE * self.i_sectors_state
+        return str(count), time_x, str(size_x),str(self.user_id)
+
+    def show_detail_info(self):
+        """
+        使用info name指令时显示的信息
+        :return:
+        """
 
     @property
     def i_sectors(self):
@@ -289,6 +309,7 @@ class INode(Block):
         self._write_deny = False
 
     def write_back(self, fp):
+        self._mtime = time.time()  # 修改时间
         db_id = INODE_BLOCK_START_ID + self.i_no
         fp.seek(db_id * BLOCK_SIZE)
         fp.write(bytes(self))
@@ -308,9 +329,19 @@ class CatalogBlock(Block):
         self.parent_inode_id = parent_inode_id  # 上级目录的inode索引的id
         self.son_files = dict()  # key:filename,value:inode_id
         self.son_dirs = dict()
+        self.counts = 0
+
+    def son_list(self):
+        yield from self.son_files.items()
+        yield from self.son_dirs.items()
 
     def add_new_cat(self, name, inode_id):
         self.son_dirs[name] = inode_id
+        self.counts += 1
+
+    def add_new_file(self, name, inode_id):
+        self.son_files[name] = inode_id
+        self.counts += 1
 
     def get_dir(self, dir_name):
         """
@@ -349,8 +380,10 @@ class CatalogBlock(Block):
     def remove(self, name, flag):
         if flag == FILE_TYPE:
             self.son_files.pop(name)
+            self.counts -= 1
         elif flag == DIR_TYPE:
             self.son_dirs.pop(name)
+            self.counts -= 1
 
     def file_name_and_types(self):
         return [(key, DIR_TYPE) for key in self.son_dirs.keys()] \

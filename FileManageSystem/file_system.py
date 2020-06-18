@@ -120,7 +120,7 @@ class FileSystem:
         target_inode = self.get_inode(target_id)
         target_dir = target_inode.get_target_obj(self.fp)
         new_inode = self.get_new_inode(user_id=ROOT_ID, file_type=FILE_TYPE)
-        target_dir.son_files['password'] = new_inode.i_no  # 加入文件字典
+        target_dir.add_new_file('password', new_inode.i_no)
         self.write_back(target_inode, bytes(target_dir))
         target_inode.write_back(self.fp)
         new_inode.write_back(self.fp)
@@ -182,6 +182,17 @@ class FileSystem:
                     return True
             print("用户名或密码错误")
             return False
+
+    def show_ll_info(self):
+        """
+        打印当前目录下的详细文件信息
+        :return:
+        """
+        pwd_cat = self.load_pwd_obj()
+        for name, inode_id in pwd_cat.son_list():
+            inode = self.get_inode(inode_id)
+            res = inode.show_ll_info(self.fp)
+            print(' '.join(res) + ' ' + name)
 
     def add_user(self, user_id):
         if not check_auth(ROOT_ID, user_id):
