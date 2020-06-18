@@ -27,3 +27,6 @@ class User:
 
     def login(self, name, password, root_user=False):
         return name == self._name and (root_user or md5(password) == self._password)
+
+    def __str__(self):
+        print(self.name, self.user_id, self._password)

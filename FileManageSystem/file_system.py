@@ -37,6 +37,10 @@ class FileSystem:
         self.user_counts = 0
 
     def __enter__(self):
+        """
+        文件系统的启动部分
+        :return:
+        """
         self.clear()
         self.login()
         self.show_info()

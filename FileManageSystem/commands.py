@@ -13,12 +13,22 @@ from file_system import FileSystem
 from file_ui import TextEdit
 
 
-def useradd(fs: FileSystem):
+def useradd(fs: FileSystem, *args):
     """
     添加用户，并将用户目录挂载到base/home/下
     :param fs:
     :return:
     """
+    if args and args[0] == '-h':
+        print("""
+        添加用户
+            使用方法直接输入useradd不需要参数
+            只有root用户可以使用此命令
+            添加完用户后会在base/home/下新建对应的用户文件目录
+            命名为用户名
+        """)
+        return
+
     if fs.current_user_id != ROOT_ID:
         print("非root用户无权添加账户")
         return
@@ -50,25 +60,45 @@ def useradd(fs: FileSystem):
 
 
 @line
-def pwd(fs: FileSystem):
+def pwd(fs: FileSystem, *args):
+    """
+    打印当前目录的完整路径
+    :param fs:
+    :return:
+    """
     print(fs.pwd())
 
 
-def clear(fs: FileSystem):
+def clear(fs: FileSystem, *args):
+    """
+    清空终端输出
+    :param fs:
+    :return:
+    """
     fs.clear()
 
 
-def cls(fs: FileSystem):
+def cls(fs: FileSystem, *args):
     fs.clear()
 
 
-def su(fs: FileSystem, username: str):
+def su(fs: FileSystem, *args):
     """
     切换当前用户指令
     :param fs:
     :param username:
     :return:
     """
+    username = args[0]
+    if username == '-h':
+        print("""
+        切换用户
+            su username
+            root用户切换其他账户不需要密码
+            普通账户切换需要输入密码
+        """)
+        return
+
     if fs.login(username=username):
         if username != 'root':
             cd(fs, f'~/home/{username}')
@@ -87,6 +117,8 @@ def mkdir(fs: FileSystem, name: str):
     if name == '-h':
         print("""
         新建文件夹
+            mkdir dirname
+            只可以在当前目录的新建不可跳级新建
             获得当前目录对象pwd_obj
             检查命名冲突，pwd_obj.check_name(name)
             获取新的inode对象
@@ -137,6 +169,16 @@ def cp(fs: FileSystem, *args):
     :param args:
     :return:
     """
+    if args[0] == '-h':
+        print("""
+        复制文件
+            cp xx/xx/src_filename xx/xx/tgt_dir
+            复制文件到其他目录
+            支持跨目录层级调用
+            仅支持复制文件
+        """)
+        return
+
     if args[0] == '-r':
         path_src = args[1]
         path_tgt = args[2]
@@ -185,6 +227,14 @@ def mv(fs: FileSystem, *args):
     :param args:
     :return:
     """
+    if args[0] == '-h':
+        print("""
+        剪切文件或目录：
+            mv xx/xx/src xx/xx/tgt
+            可以跨目录层级剪切目录或文件到其他目录
+        """)
+        return
+
     path_src = args[0]  # home/ywq/demo
     path_tgt = args[1]  # home/caohang
     name = path_src.split('/')[-1]  # 取出文件名
@@ -223,14 +273,25 @@ def mv(fs: FileSystem, *args):
     cd(fs, '/'.join(['..'] * cnt2))
 
 
-def rename(fs: FileSystem, name1, name2):
+def rename(fs: FileSystem, *args):
     """
     修改名字 rename name1 name2
     :param fs:
-    :param name1: 当前文件或目录的名字
-    :param name2: 目标名字
+    :param args:
     :return:
     """
+    if args[0] == '-h':
+        print("""
+        修改名字
+            rename src_name tgt_name
+            不可跨目录层级使用
+            可以修改文件/目录的名字
+        """)
+        return
+
+    name1 = args[0]
+    name2 = args[1]
+
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag = pwd_cat.is_exist_son_files(name1)
     if flag == -1:
@@ -254,6 +315,14 @@ def touch(fs: FileSystem, name: str):
     :param name:
     :return:
     """
+    if name == '-h':
+        print("""
+        新建文件
+            touch file_name
+            不可跨目录层级调用
+        """)
+        return
+
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag, info = pwd_cat.check_name(name)
     if not flag:
@@ -274,6 +343,15 @@ def vim(fs: FileSystem, name: str):
     :param name:
     :return:
     """
+    if name == '-h':
+        print("""
+        编辑文件中的内容
+            vim file_name
+            不可跨层级调用
+            命令使用后会打开一个线程单独运行文本编辑器
+        """)
+        return
+
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag = pwd_cat.is_exist_son_files(name)
     if flag == -1:
@@ -283,11 +361,11 @@ def vim(fs: FileSystem, name: str):
     if flag == DIR_TYPE:
         print("{} 是文件夹".format(name))
     if flag == FILE_TYPE:
-        def func():
-            inode_io = pwd_cat.get_file(name)
-            inode = fs.get_inode(inode_id=inode_io)
-            if check_auth(inode.user_id, fs.current_user_id):
-                flag, s = fs.load_files_block(inode)
+        inode_io = pwd_cat.get_file(name)
+        inode = fs.get_inode(inode_id=inode_io)
+        if check_auth(inode.user_id, fs.current_user_id):
+            def func():
+                flag_x, s = fs.load_files_block(inode)
                 if not s:
                     s = ''
                 te = TextEdit(s)
@@ -298,11 +376,11 @@ def vim(fs: FileSystem, name: str):
                     inode.write_back(fs.fp)
                 else:
                     print("out of size")
-            else:
-                print("cannot edit file .: Permission denied")
 
-        vim_thread = Thread(target=func)
-        vim_thread.start()
+            vim_thread = Thread(target=func)
+            vim_thread.start()
+        else:
+            print("cannot edit file .: Permission denied")
 
 
 @line
@@ -313,6 +391,16 @@ def more(fs: FileSystem, name: str):
     :param name:
     :return:
     """
+
+    if name == '-h':
+        print("""
+        显示文本内容
+            more file_name
+            不可跨目录层级调用
+            完全显示文本内容
+        """)
+        return
+
     pwd_cat = fs.load_pwd_obj()  # 当前目录
     flag = pwd_cat.is_exist_son_files(name)
     if flag == -1:
@@ -362,6 +450,14 @@ def tree_x(fs: FileSystem, depth: int, level=0):
 
 @line
 def tree(fs: FileSystem, *args):
+    if args[0] == '-h':
+        print("""
+        打印目录结构
+            tree        单独使用打印一层
+            tree -d n   指定打印层数
+        """)
+        return
+
     depth = 1
     if args:
         if args[0] == '-d':
@@ -372,12 +468,21 @@ def tree(fs: FileSystem, *args):
 
 
 @line
-def ls(fs: FileSystem):
+def ls(fs: FileSystem, *args):
     """
     打印当前目录下的全部文件
     :param fs:
     :return:
     """
+    if args and args[0] == '-h':
+        print("""
+        打印当前目录下的全部文件
+            ls
+            绿色表示目录
+            白色表示普通文件
+        """)
+        return
+
     pwd_cat = fs.load_pwd_obj()
     file_list = pwd_cat.file_name_and_types()
     for name, flag in file_list:
@@ -389,17 +494,38 @@ def ls(fs: FileSystem):
 
 
 @line
-def ll(fs: FileSystem):
+def ll(fs: FileSystem, *args):
     """
     打印当前目录下的具体信息
     :param fs:
     :return:
     """
+    if args and args[0] == '-h':
+        print("""
+        打印当前目录下的全部文件及详细信息
+            ll
+            绿色表示目录
+            白色表示普通文件
+            打印内容分别是：
+            1.文件数（普通文件是1，目录是其下一级所包含的文件数目）
+            2.上次修改日期（2020-06-19 00:22:42）
+            3.文件大小 （512B 整数倍）
+            4.拥有者的ID
+            5.文件/目录 名
+        """)
+        return
     fs.show_ll_info()
 
 
 @line
 def info(fs: FileSystem, name):
+    if name == '-h':
+        print("""
+        显示文件详情
+            info filename
+            不可跨目录层级调用
+        """)
+        return
     pwd_cat = fs.load_pwd_obj()
     type_x = pwd_cat.is_exist_son_files(name)
     if type_x == -1:
@@ -410,7 +536,15 @@ def info(fs: FileSystem, name):
 
 
 @line
-def detail(fs: FileSystem):
+def detail(fs: FileSystem, *args):
+    if args and args[0] == '-h':
+        print("""
+        显示系统信息：
+            系统名
+            索引块使用情况
+            数据块使用情况
+        """)
+        return
     fs.show()
 
 
@@ -421,6 +555,14 @@ def rm(fs: FileSystem, *args):
     :param args: 参数
     :return:
     """
+    if args[0] == '-h':
+        print("""
+        删除文件或目录
+            rm filename     删除当前文件
+            rm -r dirname   递归删除目录及其下所有内容
+            不可跨目录层级调用
+        """)
+        return
 
     pwd_cat = fs.load_pwd_obj()
     power = False  # 删除力度
@@ -456,3 +598,40 @@ def rm(fs: FileSystem, *args):
                 fs.write_back(fs.pwd_inode, bytes(pwd_cat))
             else:
                 print("cannot delete directory/file .: Permission denied")
+
+
+def main(*args):
+    """
+    打印支持的命令
+    :return:
+    """
+    print("""
+    这是一个模拟的文件系统
+    fms.pfs用于模拟磁盘，会在系统运行的时候加载系统关闭时关闭
+    系统中的信息和用户文件都存放于fms.pfs中，系统运行时进行加载
+    基于最基本linux中的inode---dir_block---inode---data_block结构
+    包含基本的block有superblock，inode，datablock(dirblock,fileblock)
+    不同于linux中使用bitmap进行空间分配，本系统使用成组链接法进行分配
+    
+    支持多用户多级目录，以及用户访问权限划分
+    
+    支持的命令有 (通过cmd -h 查看使用 例如 (useradd -h,su -h,tree -h,))
+        添加用户 useradd
+        切换用户 su username
+        当前路径 pwd
+        清空屏幕 clear(cls)
+        新建目录 mkdir dirname
+        新建文件 touch filename
+        编辑文件 vim filename
+        显示文件 more filename
+        切换目录 cd targetdir
+        复制功能 cp srcname tgtpath
+        剪切功能 mv srcname tgtpath
+        重命名   rename srcname tgtname
+        目录结构 tree -d n
+        目录内容 ls
+        目录详情 ll
+        文件信息 info filename/dirname
+        系统信息 detail
+        删除文件 rm [-r] filename/dirname
+    """)
