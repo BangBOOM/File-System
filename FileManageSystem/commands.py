@@ -141,6 +141,39 @@ def cp(fs: FileSystem, *args):
     else:
         path_src = args[0]
         path_tgt = args[1]
+        name = path_src.split('/')[-1]  # 取出文件名
+        cnt1 = len(path_src.split('/')) - 1  # 第一个目录的深度
+        cnt2 = len(path_tgt.split('/'))  # 第二个目录的深度
+        text_copy = ""  # 文件内容
+        cd(fs, '/'.join(path_src.split('/')[:-1]))
+        pwd_cat = fs.load_pwd_obj()
+        flag = pwd_cat.is_exist_son_files(name)
+        if flag == -1:
+            print("{} 文件不存在".format(name))
+            cd(fs, '/'.join(['..'] * cnt1))
+            return
+        else:
+            if flag == FILE_TYPE:
+                inode_io = pwd_cat.son_files[name]
+                inode = fs.get_inode(inode_id=inode_io)
+                flag2, text = fs.load_files_block(inode)
+                if flag2:
+                    text_copy = text  # 传递内容
+            if flag == DIR_TYPE:
+                print("不能复制文件夹")
+                cd(fs, '/'.join(['..'] * cnt1))
+                return
+
+        cd(fs, '/'.join(['..'] * cnt1))
+        # 增加到现在的目录下
+        cd(fs, '/'.join(path_tgt.split('/')))
+        touch(fs, name)
+        pwd_cat_new = fs.load_pwd_obj()
+        new_inode_io = pwd_cat_new.son_files[name]
+        new_inode = fs.get_inode(inode_id=new_inode_io)
+        fs.write_back(new_inode, pickle.dumps(text_copy))
+        new_inode.write_back(fs.fp)
+        cd(fs, '/'.join(['..'] * cnt2))
 
 
 def mv(fs: FileSystem, *args):
@@ -152,13 +185,13 @@ def mv(fs: FileSystem, *args):
     """
     path_src = args[0]  # home/ywq/demo
     path_tgt = args[1]  # home/caohang
-    name = path_src.split('/')[-1]  #取出文件名
-    cnt1 = len(path_src.split('/')) - 1  #第一个目录的深度
-    cnt2 = len(path_tgt.split('/'))  #第二个目录的深度
+    name = path_src.split('/')[-1]  # 取出文件名
+    cnt1 = len(path_src.split('/')) - 1  # 第一个目录的深度
+    cnt2 = len(path_tgt.split('/'))  # 第二个目录的深度
     inode_io = 0
-    #删掉原来的目录
+    # 删掉原来的目录
     cd(fs, '/'.join(path_src.split('/')[:-1]))
-    pwd_cat = fs.load_pwd_obj() #当前目录块
+    pwd_cat = fs.load_pwd_obj()  # 当前目录块
     flag = pwd_cat.is_exist_son_files(name)
     if flag == -1:
         print("{} 文件不存在".format(name))
@@ -174,13 +207,17 @@ def mv(fs: FileSystem, *args):
         fs.write_back(fs.pwd_inode, bytes(pwd_cat))
     cd(fs, '/'.join(['..'] * cnt1))
 
-    #增加到现在的目录下
+    # 增加到现在的目录下
     cd(fs, '/'.join(path_tgt.split('/')))
-    pwd_cat_new = fs.load_pwd_obj()  #要增加的目录块
+    pwd_cat_new = fs.load_pwd_obj()  # 要增加的目录块
     if flag == FILE_TYPE:
         pwd_cat_new.son_files[name] = inode_io
     if flag == DIR_TYPE:
+        inode = fs.get_inode(inode_io)
+        new_cat = inode.get_target_obj(fs.fp)
+        new_cat.parent_inode_id = fs.pwd_inode.i_no
         pwd_cat_new.son_dirs[name] = inode_io
+        fs.write_back(inode, bytes(new_cat))
     fs.write_back(fs.pwd_inode, bytes(pwd_cat_new))
     cd(fs, '/'.join(['..'] * cnt2))
 
@@ -208,6 +245,7 @@ def rename(fs: FileSystem, name1, name2):
                 pwd_cat.son_dirs[name2] = pwd_cat.son_dirs[name1]
                 del pwd_cat.son_dirs[name1]
             fs.write_back(fs.pwd_inode, bytes(pwd_cat))
+
 
 def touch(fs: FileSystem, name: str):
     """

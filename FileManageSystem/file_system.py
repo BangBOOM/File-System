@@ -77,8 +77,8 @@ class FileSystem:
 
             if not check_auth(inode.user_id, self.current_user_id):
                 if self.current_user_id != ROOT_ID:
-                    if name not in [*INIT_DIRS, "~"]:
-                        if name == '..' and self.path[-2] in [*INIT_DIRS, BASE_NAME]:
+                    if name not in [*INIT_DIRS[1:], "~"]:
+                        if name == '..' and self.path[-2] in [*INIT_DIRS[1:], BASE_NAME]:
                             pass
                         else:
                             if info:
