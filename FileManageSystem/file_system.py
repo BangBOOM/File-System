@@ -10,6 +10,8 @@ from config import *
 from utils import form_serializer
 from utils import split_serializer
 from utils import check_auth
+from utils import logo
+from utils import color
 from models import SuperBlock
 from models import INode
 from models import CatalogBlock
@@ -192,6 +194,10 @@ class FileSystem:
         for name, inode_id in pwd_cat.son_list():
             inode = self.get_inode(inode_id)
             res = inode.show_ll_info(self.fp)
+            if inode.target_type == DIR_TYPE:
+                name = color(name, DIR_COLOR_F, DIR_COLOR_B)
+            else:
+                name = color(name, FILE_COLOR_F, FILE_COLOR_B)
             print(' '.join(res) + ' ' + name)
 
     def add_user(self, user_id):
@@ -364,13 +370,18 @@ class FileSystem:
             for son_inode_id in inode_target.get_all_son_inode():
                 self.free_up_inode(son_inode_id)
         for i in range(inode.i_sectors_state):
-            self.sp.free_up_inode_block(self.fp, inode.get_sector(i))
+            self.sp.free_up_data_block(self.fp, inode.get_sector(i))
+        self.sp.free_up_inode_block(self.fp, inode_id)
         return True
 
     def show_info(self):
         self.clear()
+        self.show()
+
+    def show(self):
         print("Welcome to the PFS")
-        print(LOGO)
+        logo()
+        self.sp.show_sp_info()
 
     def clear(self):
         os.system('cls')

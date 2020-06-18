@@ -59,6 +59,10 @@ class SuperBlock(Block):
         self.node_group_link = INodeGroupLink(0)
         self.base_dir_inode_id = -1  # 根目录的inode_id
 
+    def show_sp_info(self):
+        print("INODE使用情况：", self.inode_unused_cnt, '/', self.inode_cnt)
+        print("DATABLOCK使用情况：", self.block_unused_cnt, '/', self.block_cnt)
+
     def write_back(self, fp):
         fp.seek(0)
         start = 0
@@ -103,6 +107,7 @@ class SuperBlock(Block):
         """
 
         if self.block_group_link.has_free_space():
+            self.block_unused_cnt += 1
             self.block_group_link.add_to_stack(block_id)
             return
 
@@ -146,6 +151,7 @@ class SuperBlock(Block):
 
     def free_up_inode_block(self, fp, block_id):
         if self.node_group_link.has_free_space():
+            self.inode_unused_cnt += 1
             self.node_group_link.add_to_stack(block_id)
             return
 
@@ -204,15 +210,20 @@ class INode(Block):
     def get_target_obj(self, fp):
         if self._i_sectors_state == 0:
             return None
-        s = b''
-        for block_id in self._i_sectors[:self._i_sectors_state]:
-            fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
-            s += fp.read()
+        s = self.get_target_bytes(fp)
+
         if self.target_type == 1:
             return CatalogBlock.form_bytes(s)
         else:
             self._atime = time.time()  # 文件则修改打开时间
             return pickle.loads(s)
+
+    def get_target_bytes(self, fp):
+        s = b''
+        for block_id in self._i_sectors[:self._i_sectors_state]:
+            fp.seek((block_id + DATA_BLOCK_START_ID) * BLOCK_SIZE)
+            s += fp.read()
+        return s
 
     def show_ll_info(self, fp):
         """
@@ -226,13 +237,23 @@ class INode(Block):
             count = target_dir.counts
         time_x = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self._mtime))
         size_x = BLOCK_SIZE * self.i_sectors_state
-        return str(count), time_x, str(size_x),str(self.user_id)
+        return str(count), time_x, str(size_x), str(self.user_id)
 
-    def show_detail_info(self):
+    def show_detail_info(self, fp):
         """
         使用info name指令时显示的信息
         :return:
         """
+        if self.target_type == FILE_TYPE:
+            print("类型：文件")
+        else:
+            print("类型：目录")
+        print("拥有者ID:", self.user_id)
+        print("创建时间：", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self._ctime)))
+        print("上一次打开时间：", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self._atime)))
+        print("上一次修改时间：", time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self._mtime)))
+        print("size:", len(self.get_target_bytes(fp)))
+        print("占用数据块：", self._i_sectors)
 
     @property
     def i_sectors(self):
@@ -358,6 +379,12 @@ class CatalogBlock(Block):
         :return:
         """
         return self.son_files.get(file_name)
+
+    def get_inode_id(self, name, type_x):
+        if type_x == FILE_TYPE:
+            return self.get_file(name)
+        if type_x == DIR_TYPE:
+            return self.get_dir(name)
 
     def check_name(self, name):
         """

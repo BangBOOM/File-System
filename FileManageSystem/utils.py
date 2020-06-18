@@ -6,7 +6,7 @@ content:各种工具脚本
 import time
 import pickle
 from math import ceil
-from config import BLOCK_SIZE, ROOT_ID, VERSION, LOGO
+from config import BLOCK_SIZE, ROOT_ID, VERSION
 
 
 def serializer(text: str) -> list:
@@ -51,13 +51,23 @@ def bar(user_name, current_path):
     time_now = color(time_now, "30", "47")
     user_name = color(' ' + user_name + '@PFS ', "37", "40")
     current_path = color(' >' + current_path + ' ', "37", "44")
-    version = color(' V' + VERSION + ' ', "31", "42")
+    version = color(' ' + VERSION + ' ', "31", "42")
     cmd_in = color('> ', "44", "40")
     print(time_now + user_name + version + current_path)
     print(cmd_in, end="")
 
-def LOGO_print():
-    LOGO1='\33[1;34;40m' + "    ____   ______ _____\n   / __ \ / ____// ___/\n"
-    LOGO2='\33[1;36;40m' + " / /_/ // /_    \__ \\"+"\n"
-    LOGO3='\33[1;32;40m' + "/ ____// __/   ___/ /\n/_/    /_/     /____/\n\n\33[0m"
-    print(LOGO1,LOGO2,LOGO3)
+
+def logo():
+    LOGO1 = '\33[1;34;40m' + "    ____   ______ _____\n   / __ \ / ____// ___/\n"
+    LOGO2 = '\33[1;36;40m' + " / /_/ // /_    \__ \\" + "\n"
+    LOGO3 = '\33[1;32;40m' + "/ ____// __/   ___/ /\n/_/    /_/     /____/\n\n\33[0m"
+    print(LOGO1, LOGO2, LOGO3)
+
+
+def line(func):
+    def return_func(*args):
+        print()
+        func(*args)
+        print()
+
+    return return_func

@@ -8,6 +8,7 @@ from threading import Thread
 from config import *
 from utils import check_auth
 from utils import color
+from utils import line
 from file_system import FileSystem
 from file_ui import TextEdit
 
@@ -48,6 +49,7 @@ def useradd(fs: FileSystem):
     home_inode.write_back(fs.fp)
 
 
+@line
 def pwd(fs: FileSystem):
     print(fs.pwd())
 
@@ -200,10 +202,9 @@ def mv(fs: FileSystem, *args):
     else:
         if flag == FILE_TYPE:
             inode_io = pwd_cat.son_files[name]
-            del pwd_cat.son_files[name]
         if flag == DIR_TYPE:
             inode_io = pwd_cat.son_dirs[name]
-            del pwd_cat.son_dirs[name]
+        pwd_cat.remove(name, flag)
         fs.write_back(fs.pwd_inode, bytes(pwd_cat))
     cd(fs, '/'.join(['..'] * cnt1))
 
@@ -211,12 +212,12 @@ def mv(fs: FileSystem, *args):
     cd(fs, '/'.join(path_tgt.split('/')))
     pwd_cat_new = fs.load_pwd_obj()  # 要增加的目录块
     if flag == FILE_TYPE:
-        pwd_cat_new.son_files[name] = inode_io
+        pwd_cat_new.add_new_file(name, inode_io)
     if flag == DIR_TYPE:
         inode = fs.get_inode(inode_io)
         new_cat = inode.get_target_obj(fs.fp)
         new_cat.parent_inode_id = fs.pwd_inode.i_no
-        pwd_cat_new.son_dirs[name] = inode_io
+        pwd_cat_new.add_new_cat(name, inode_io)
         fs.write_back(inode, bytes(new_cat))
     fs.write_back(fs.pwd_inode, bytes(pwd_cat_new))
     cd(fs, '/'.join(['..'] * cnt2))
@@ -239,11 +240,10 @@ def rename(fs: FileSystem, name1, name2):
             print("{} 文件重名".format(name2))
         else:
             if flag == FILE_TYPE:
-                pwd_cat.son_files[name2] = pwd_cat.son_files[name1]
-                del pwd_cat.son_files[name1]
+                pwd_cat.add_new_file(name2, pwd_cat.son_files[name1])
             if flag == DIR_TYPE:
-                pwd_cat.son_dirs[name2] = pwd_cat.son_dirs[name1]
-                del pwd_cat.son_dirs[name1]
+                pwd_cat.add_new_cat(name2, pwd_cat.son_files[name1])
+            pwd_cat.remove(name1, flag)
             fs.write_back(fs.pwd_inode, bytes(pwd_cat))
 
 
@@ -293,8 +293,11 @@ def vim(fs: FileSystem, name: str):
                 te = TextEdit(s)
                 te.run()
                 s = te.s
-                fs.write_back(inode, pickle.dumps(s))
-                inode.write_back(fs.fp)
+                if len(pickle.dumps(s)) <= (13 * BLOCK_SIZE - 100):
+                    fs.write_back(inode, pickle.dumps(s))
+                    inode.write_back(fs.fp)
+                else:
+                    print("out of size")
             else:
                 print("cannot edit file .: Permission denied")
 
@@ -302,6 +305,7 @@ def vim(fs: FileSystem, name: str):
         vim_thread.start()
 
 
+@line
 def more(fs: FileSystem, name: str):
     """
     展示文件
@@ -356,6 +360,7 @@ def tree_x(fs: FileSystem, depth: int, level=0):
             print("├──", color(name, FILE_COLOR_F, FILE_COLOR_B))
 
 
+@line
 def tree(fs: FileSystem, *args):
     depth = 1
     if args:
@@ -366,6 +371,7 @@ def tree(fs: FileSystem, *args):
     tree_x(fs, depth)
 
 
+@line
 def ls(fs: FileSystem):
     """
     打印当前目录下的全部文件
@@ -382,6 +388,7 @@ def ls(fs: FileSystem):
     print()
 
 
+@line
 def ll(fs: FileSystem):
     """
     打印当前目录下的具体信息
@@ -389,6 +396,22 @@ def ll(fs: FileSystem):
     :return:
     """
     fs.show_ll_info()
+
+
+@line
+def info(fs: FileSystem, name):
+    pwd_cat = fs.load_pwd_obj()
+    type_x = pwd_cat.is_exist_son_files(name)
+    if type_x == -1:
+        return
+    inode_id = pwd_cat.get_inode_id(name, type_x)
+    inode = fs.get_inode(inode_id)
+    inode.show_detail_info(fs.fp)
+
+
+@line
+def detail(fs: FileSystem):
+    fs.show()
 
 
 def rm(fs: FileSystem, *args):

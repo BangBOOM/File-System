@@ -20,7 +20,7 @@ def running_pfs(fs: FileSystem):
             func = getattr(commands, cmd[0])
             func(fs, *cmd[1:])
         except AttributeError:
-            print("命令不支持")
+            print("\n命令不支持\n")
 
 
 def main():
