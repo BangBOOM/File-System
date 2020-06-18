@@ -151,9 +151,37 @@ def mv(fs: FileSystem, *args):
     """
     path_src = args[0]  # home/ywq/demo
     path_tgt = args[1]  # home/caohang
+    name = path_src.split('/')[-1]  #取出文件名
+    cnt1 = len(path_src.split('/')) - 1  #第一个目录的深度
+    cnt2 = len(path_tgt.split('/'))  #第二个目录的深度
+    inode_io = 0
+    #删掉原来的目录
     cd(fs, '/'.join(path_src.split('/')[:-1]))
-    # del demo...
-    cd(fs, '/'.join(['..'] * 2))
+    pwd_cat = fs.load_pwd_obj() #当前目录块
+    flag = pwd_cat.is_exist_son_files(name)
+    if flag == -1:
+        print("{} 文件不存在".format(name))
+        cd(fs, '/'.join(['..'] * cnt1))
+        return
+    else:
+        if flag == FILE_TYPE:
+            inode_io = pwd_cat.son_files[name]
+            del pwd_cat.son_files[name]
+        if flag == DIR_TYPE:
+            inode_io = pwd_cat.son_dirs[name]
+            del pwd_cat.son_dirs[name]
+        fs.write_back(fs.pwd_inode, bytes(pwd_cat))
+    cd(fs, '/'.join(['..'] * cnt1))
+
+    #增加到现在的目录下
+    cd(fs, '/'.join(path_tgt.split('/')))
+    pwd_cat_new = fs.load_pwd_obj()  #要增加的目录块
+    if flag == FILE_TYPE:
+        pwd_cat_new.son_files[name] = inode_io
+    if flag == DIR_TYPE:
+        pwd_cat_new.son_dirs[name] = inode_io
+    fs.write_back(fs.pwd_inode, bytes(pwd_cat_new))
+    cd(fs, '/'.join(['..'] * cnt2))
 
 
 def rename(fs: FileSystem, name1, name2):
@@ -164,8 +192,21 @@ def rename(fs: FileSystem, name1, name2):
     :param name2: 目标名字
     :return:
     """
-    pass
-
+    pwd_cat = fs.load_pwd_obj()  # 当前目录
+    flag = pwd_cat.is_exist_son_files(name1)
+    if flag == -1:
+        print("{} 文件不存在".format(name1))
+    else:
+        if name2 in pwd_cat.son_files or name2 in pwd_cat.son_dirs:
+            print("{} 文件重名".format(name2))
+        else:
+            if flag == FILE_TYPE:
+                pwd_cat.son_files[name2] = pwd_cat.son_files[name1]
+                del pwd_cat.son_files[name1]
+            if flag == DIR_TYPE:
+                pwd_cat.son_dirs[name2] = pwd_cat.son_dirs[name1]
+                del pwd_cat.son_dirs[name1]
+            fs.write_back(fs.pwd_inode, bytes(pwd_cat))
 
 def touch(fs: FileSystem, name: str):
     """
