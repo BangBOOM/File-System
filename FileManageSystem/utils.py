@@ -6,7 +6,7 @@ content:各种工具脚本
 import time
 import pickle
 from math import ceil
-from config import BLOCK_SIZE, ROOT_ID, VERSION
+from config import BLOCK_SIZE, ROOT_ID, VERSION, LOGO
 
 
 def serializer(text: str) -> list:
@@ -55,3 +55,6 @@ def bar(user_name, current_path):
     cmd_in = color('> ', "44", "40")
     print(time_now + user_name + version + current_path)
     print(cmd_in, end="")
+
+def logo_print():
+    LOGO=()
