@@ -56,5 +56,8 @@ def bar(user_name, current_path):
     print(time_now + user_name + version + current_path)
     print(cmd_in, end="")
 
-def logo_print():
-    LOGO=()
+def LOGO_print():
+    LOGO1='\33[1;34;40m' + "    ____   ______ _____\n   / __ \ / ____// ___/\n"
+    LOGO2='\33[1;36;40m' + " / /_/ // /_    \__ \\"+"\n"
+    LOGO3='\33[1;32;40m' + "/ ____// __/   ___/ /\n/_/    /_/     /____/\n\n\33[0m"
+    print(LOGO1,LOGO2,LOGO3)
