@@ -167,6 +167,7 @@ class FileSystem:
             while flag > 0:
                 username = input("用户名:")
                 password = getpass.getpass("密码:")
+
                 for item in password_list:
                     assert isinstance(item, User)
                     if item.login(username, password):
@@ -189,7 +190,7 @@ class FileSystem:
             print("用户名或密码错误")
             return False
 
-    def show_ll_info(self):
+    def show_lls_info(self):
         """
         打印当前目录下的详细文件信息
         :return:

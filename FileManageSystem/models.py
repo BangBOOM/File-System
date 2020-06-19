@@ -211,11 +211,11 @@ class INode(Block):
         if self._i_sectors_state == 0:
             return None
         s = self.get_target_bytes(fp)
-
+        self.update_atime()
+        self.write_back(fp)
         if self.target_type == 1:
             return CatalogBlock.form_bytes(s)
         else:
-            self._atime = time.time()  # 文件则修改打开时间
             return pickle.loads(s)
 
     def get_target_bytes(self, fp):
@@ -291,20 +291,11 @@ class INode(Block):
             raise TypeError("user_id需要int类型")
         self._user_id = user_id
 
-    def get_ctime(self, func):
-        return func(self._ctime)
-
     def update_ctime(self):
         self._ctime = time.time()
 
-    def get_mtime(self, func):
-        return func(self._mtime)
-
     def update_mtime(self):
         self._mtime = time.time()
-
-    def get_atime(self, func):
-        return func(self._ctime)
 
     def update_atime(self):
         self._atime = time.time()

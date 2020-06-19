@@ -303,7 +303,7 @@ def rename(fs: FileSystem, *args):
             if flag == FILE_TYPE:
                 pwd_cat.add_new_file(name2, pwd_cat.son_files[name1])
             if flag == DIR_TYPE:
-                pwd_cat.add_new_cat(name2, pwd_cat.son_files[name1])
+                pwd_cat.add_new_cat(name2, pwd_cat.son_dirs[name1])
             pwd_cat.remove(name1, flag)
             fs.write_back(fs.pwd_inode, bytes(pwd_cat))
 
@@ -392,7 +392,7 @@ def more(fs: FileSystem, name: str):
     :return:
     """
 
-    if name == '-h':
+    if name and name == '-h':
         print("""
         显示文本内容
             more file_name
@@ -450,7 +450,7 @@ def tree_x(fs: FileSystem, depth: int, level=0):
 
 @line
 def tree(fs: FileSystem, *args):
-    if args[0] == '-h':
+    if args and args[0] == '-h':
         print("""
         打印目录结构
             tree        单独使用打印一层
@@ -514,11 +514,11 @@ def ll(fs: FileSystem, *args):
             5.文件/目录 名
         """)
         return
-    fs.show_ll_info()
+    fs.show_lls_info()
 
 
 @line
-def info(fs: FileSystem, name):
+def stat(fs: FileSystem, name):
     if name == '-h':
         print("""
         显示文件详情
@@ -631,7 +631,7 @@ def main(*args):
         目录结构 tree -d n
         目录内容 ls
         目录详情 ll
-        文件信息 info filename/dirname
+        文件信息 stat filename/dirname
         系统信息 detail
         删除文件 rm [-r] filename/dirname
     """)

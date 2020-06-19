@@ -4,6 +4,12 @@
 
 模拟实现类Linux的文件系统
 
+## 使用方法
+
+进入[FileManageSystem](FileManageSystem)目录下
+1. 运行[initialize_disk.py](FileManageSystem/initialize_disk.py)生成一个固定大小的文件模拟磁盘
+2. 在终端中运行[running_pfs.py](FileManageSystem/running_pfs.py) 模拟加载磁盘新建命令行终端
+3. 输入`main`指令查看支持的命令
 
 
 ## git使用规范

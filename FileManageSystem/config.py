@@ -5,7 +5,7 @@ content:配置文件
 """
 
 BLOCK_SIZE = 512  # 磁盘块大小Bytes
-BLOCK_NUM = 1048576  # 磁盘块总数量
+BLOCK_NUM = 2560  # 磁盘块总数量
 
 SUPER_BLOCK_NUM = 2  # 超级块占用的块数
 INODE_BLOCK_NUM = 256  # 索引占用的块数
