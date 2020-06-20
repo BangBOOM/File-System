@@ -11,21 +11,8 @@
 2. 在终端中运行[running_pfs.py](FileManageSystem/running_pfs.py) 模拟加载磁盘新建命令行终端
 3. 输入`main`指令查看支持的命令
 
+![](https://figure-bed-y.oss-cn-beijing.aliyuncs.com/img/20200620231825.png)
 
-## git使用规范
-
-提交文件的时候几个规范的写法：
-
-```
-init: 初始化项目
-try: 尝试完成xxx功能 
-add: 添加用xxx功能
-update: 完善xx功能
-done: 完成xx功能
-fix: 修复xxbug
-delete: 删除xxx内容
-reset: 放弃修改返回
-```
 
 ## 文件目录
 
