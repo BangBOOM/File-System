@@ -244,6 +244,7 @@ class INode(Block):
         使用info name指令时显示的信息
         :return:
         """
+        print("INODE_ID:", self.i_no)
         if self.target_type == FILE_TYPE:
             print("类型：文件")
         else:

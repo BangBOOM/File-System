@@ -522,7 +522,7 @@ def stat(fs: FileSystem, name):
     if name == '-h':
         print("""
         显示文件详情
-            info filename
+            stat filename/dirname
             不可跨目录层级调用
         """)
         return
