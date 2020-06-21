@@ -11,7 +11,7 @@
 2. 在终端中运行[running_pfs.py](FileManageSystem/running_pfs.py) 模拟加载磁盘新建命令行终端
 3. 输入`main`指令查看支持的命令
 
-![](https://figure-bed-y.oss-cn-beijing.aliyuncs.com/img/20200620231825.png)
+![terminal](terminal.png)
 
 
 ## 文件目录
