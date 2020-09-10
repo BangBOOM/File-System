@@ -1,3 +1,8 @@
+"""
+author:Wenquan Yang
+time:2020/6/12 22:30
+intro: 文本编辑器可视化界面
+"""
 import tkinter as tk
 from tkinter import scrolledtext
 
