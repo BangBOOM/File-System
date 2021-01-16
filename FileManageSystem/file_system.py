@@ -156,6 +156,8 @@ class FileSystem:
         登录模块
         :return:
         """
+        self.clear()
+        print("=用户登录=")
         password_file_inode_id = self._get_password_file_inode_id()
         if not password_file_inode_id:
             password_file_inode_id = self._init_root_user()
