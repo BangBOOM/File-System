@@ -133,7 +133,7 @@ class FileSystem:
         return new_inode.i_no
 
     def _init_root_user(self):
-        print("系统初始状态未创建创建root用户请设置密码")
+        print("系统初始状态,创建root用户请设置密码:")
         flag = 3
         password1 = 'admin'
         while flag > 0:
