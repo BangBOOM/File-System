@@ -4,6 +4,8 @@
 
 模拟实现类Linux的文件系统
 
+在Windows环境下开发使用，目前测试MacOS下无法使用完整功能，Linux环境未测试。
+
 ## 使用方法
 
 进入[FileManageSystem](FileManageSystem)目录下
